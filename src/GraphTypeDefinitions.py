@@ -26,7 +26,7 @@ from ._GraphResolvers import (
     )
 
 GroupGQLModel = Annotated["GroupGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
-GroupGQLModel = Annotated["GroupGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
+EventGQLModel = Annotated["EventGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 
 # region FacilityGQLModel
 @strawberry.federation.type(

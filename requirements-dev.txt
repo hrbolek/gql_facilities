@@ -14,7 +14,7 @@ pydantic
 starlette
 strawberry-graphql
 aiodataloader
-pyjwt
+pyjwt[crypto]
 
 https://github.com/hrbolek/uoishelpers/archive/refs/heads/main.zip
 
