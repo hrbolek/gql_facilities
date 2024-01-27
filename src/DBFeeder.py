@@ -273,8 +273,8 @@ def get_demodata():
 
 async def initDB(asyncSessionMaker):
 
-    defaultNoDemo = "False"
-    if defaultNoDemo == os.environ.get("DEMO", defaultNoDemo):
+    DEMODATA = os.environ.get("DEMODATA", None)
+    if DEMODATA:
         dbModels = [
             FacilityTypeModel,
             EventFacilityStateType,
@@ -285,8 +285,6 @@ async def initDB(asyncSessionMaker):
         dbModels = [
             FacilityTypeModel,
             EventFacilityStateType,
-            FacilityModel,
-            EventFacilityModel        
         ]
 
     jsonData = get_demodata()
