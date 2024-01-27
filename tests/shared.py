@@ -3,15 +3,15 @@ import sys
 import asyncio
 
 # setting path
-sys.path.append("../gql_facilities")
+sys.path.append("../src")
 
 import pytest
 
 # from ..uoishelpers.uuid import UUIDColumn
 
-from gql_facilities.DBDefinitions import BaseModel
-from gql_facilities.DBDefinitions import FacilityModel, FacilityTypeModel
-from gql_facilities.DBDefinitions import EventFacilityModel, EventFacilityStateType
+from src.DBDefinitions import BaseModel
+from src.DBDefinitions import FacilityModel, FacilityTypeModel
+from src.DBDefinitions import EventFacilityModel, EventFacilityStateType
 
 async def prepare_in_memory_sqllite():
     from sqlalchemy.ext.asyncio import create_async_engine
@@ -29,7 +29,7 @@ async def prepare_in_memory_sqllite():
 
     return async_session_maker
 
-from gql_facilities.DBFeeder import get_demodata
+from src.DBFeeder import get_demodata
 
 async def prepare_demodata(async_session_maker):
     data = get_demodata()
@@ -46,7 +46,7 @@ async def prepare_demodata(async_session_maker):
     )
 
 
-from gql_facilities.Dataloaders import createLoaders_3
+from src.Dataloaders import createLoaders_3
 
 
 async def createContext(asyncSessionMaker):

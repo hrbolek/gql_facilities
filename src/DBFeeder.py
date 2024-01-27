@@ -1,6 +1,6 @@
 from functools import cache
 
-from gql_facilities.DBDefinitions import (
+from src.DBDefinitions import (
     FacilityTypeModel,
     FacilityModel,
     EventFacilityStateType,

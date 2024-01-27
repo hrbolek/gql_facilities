@@ -12,11 +12,12 @@ from sqlalchemy import (
     Sequence,
     Table,
     Boolean,
+    Uuid
 )
 from sqlalchemy.dialects.postgresql import UUID
 
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 import uuid
 
 BaseModel = declarative_base()
@@ -26,24 +27,11 @@ def newUuidAsString():
     return f"{uuid.uuid1()}"
 
 
-def UUIDColumn(name=None):
-    if name is None:
-        return Column(String, primary_key=True, unique=True, default=newUuidAsString)
-    else:
-        return Column(
-            name, String, primary_key=True, unique=True, default=newUuidAsString
-        )
+def UUIDFKey(comment=None, nullable=True, **kwargs):
+    return Column(Uuid, index=True, comment=comment, nullable=nullable, **kwargs)
 
-def UUIDFKey(*, ForeignKey=None, nullable=False):
-    if ForeignKey is None:
-        return Column(
-            String, index=True, nullable=nullable
-        )
-    else:
-        return Column(
-            ForeignKey, index=True, nullable=nullable
-        )
-# id = Column(UUID(as_uuid=True), primary_key=True, server_default=sqlalchemy.text("uuid_generate_v4()"),)
+def UUIDColumn():
+    return Column(Uuid, primary_key=True, comment="primary key", default=uuid)
 
 ###########################################################################################################################
 #
@@ -78,6 +66,7 @@ class FacilityModel(BaseModel):
     lastchange = Column(DateTime, server_default=sqlalchemy.sql.func.now())
     createdby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
     changedby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
+    rbacobject = UUIDFKey(nullable=True, comment="id rbacobject")#Column(ForeignKey("users.id"), index=True, nullable=True)
 
 class FacilityTypeModel(BaseModel):
     """Urcuje typ objektu (areal, budova, patro, mistnost)"""
@@ -93,6 +82,7 @@ class FacilityTypeModel(BaseModel):
     lastchange = Column(DateTime, server_default=sqlalchemy.sql.func.now())
     createdby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
     changedby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
+    rbacobject = UUIDFKey(nullable=True, comment="id rbacobject")#Column(ForeignKey("users.id"), index=True, nullable=True)
 
 class EventFacilityModel(BaseModel):
     __tablename__ = "facilities_events"
@@ -106,6 +96,7 @@ class EventFacilityModel(BaseModel):
     lastchange = Column(DateTime, server_default=sqlalchemy.sql.func.now())
     createdby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
     changedby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
+    rbacobject = UUIDFKey(nullable=True, comment="id rbacobject")#Column(ForeignKey("users.id"), index=True, nullable=True)
 
 class EventFacilityStateType(BaseModel):
     __tablename__ = "facilityeventstatetypes"
@@ -121,6 +112,7 @@ class EventFacilityStateType(BaseModel):
     lastchange = Column(DateTime, server_default=sqlalchemy.sql.func.now())
     createdby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
     changedby = UUIDFKey(nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
+    rbacobject = UUIDFKey(nullable=True, comment="id rbacobject")#Column(ForeignKey("users.id"), index=True, nullable=True)
 
 # class FacilityManagement(BaseModel):
 #     __tablename__ = "facilitymanagementgroups"

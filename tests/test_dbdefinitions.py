@@ -3,15 +3,15 @@ import sys
 import asyncio
 
 # setting path
-sys.path.append("../gql_facilities")
+sys.path.append("../src")
 
 import pytest
 
 # from ..uoishelpers.uuid import UUIDColumn
 
-from gql_facilities.DBDefinitions import BaseModel
-from gql_facilities.DBDefinitions import FacilityModel, FacilityTypeModel
-from gql_facilities.DBDefinitions import EventFacilityModel, EventFacilityStateType
+from src.DBDefinitions import BaseModel
+from src.DBDefinitions import FacilityModel, FacilityTypeModel
+from src.DBDefinitions import EventFacilityModel, EventFacilityStateType
 
 from shared import prepare_demodata, prepare_in_memory_sqllite, get_demodata
 
@@ -23,7 +23,7 @@ async def test_table_users_feed():
 
     data = get_demodata()
 
-from gql_facilities.DBDefinitions import ComposeConnectionString
+from src.DBDefinitions import ComposeConnectionString
 
 
 def test_connection_string():
@@ -33,7 +33,7 @@ def test_connection_string():
     assert "@" in connectionString
 
 
-from gql_facilities.DBDefinitions import UUIDColumn
+from src.DBDefinitions import UUIDColumn
 
 
 def test_connection_uuidcolumn():
@@ -42,7 +42,7 @@ def test_connection_uuidcolumn():
     assert col is not None
 
 
-from gql_facilities.DBDefinitions import startEngine
+from src.DBDefinitions import startEngine
 
 
 @pytest.mark.asyncio

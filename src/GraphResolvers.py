@@ -14,7 +14,7 @@ from uoishelpers.resolvers import (
 )
 from uoishelpers.resolvers import putSingleEntityToDb
 
-from gql_facilities.DBDefinitions import BaseModel
+from src.DBDefinitions import BaseModel
 
 ###########################################################################################################################
 #
@@ -22,7 +22,7 @@ from gql_facilities.DBDefinitions import BaseModel
 #
 ###########################################################################################################################
 
-from gql_facilities.DBDefinitions import FacilityTypeModel, FacilityModel, EventFacilityModel, EventFacilityStateType
+from src.DBDefinitions import FacilityTypeModel, FacilityModel, EventFacilityModel, EventFacilityStateType
 
 ###########################################################################################################################
 #

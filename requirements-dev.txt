@@ -4,6 +4,8 @@ uvicorn[standard]
 gunicorn
 
 asyncpg
+aiohttp
+requests
 
 sqlalchemy
 sqlalchemy_utils
@@ -12,6 +14,7 @@ pydantic
 starlette
 strawberry-graphql
 aiodataloader
+pyjwt
 
 https://github.com/hrbolek/uoishelpers/archive/refs/heads/main.zip
 
@@ -19,3 +22,4 @@ pytest
 pytest-cov
 pytest-asyncio
 aiosqlite
+https://github.com/hrbolek/PyMockOAuthServer/archive/refs/heads/main.zip
