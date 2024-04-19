@@ -34,7 +34,7 @@ EventGQLModel = Annotated["EventGQLModel", strawberry.lazy(".GraphTypeDefinition
 )
 class FacilityGQLModel:
     @classmethod
-    def getLoader(info: strawberry.types.Info):
+    def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).facilities
 
     resolve_reference = resolve_reference
@@ -225,7 +225,7 @@ class FacilityInputFilter:
     group_id: IDType
 
 
-@strawberry.field(description="""Finds an facility their id""")
+@strawberry.field(description="""Finds paged facilities""")
 @asPage
 async def facility_page(
     self, info: strawberry.types.Info, 
