@@ -172,5 +172,6 @@ def ComposeConnectionString():
 
     driver = "postgresql+asyncpg"  # "postgresql+psycopg2"
     connectionstring = f"{driver}://{user}:{password}@{hostWithPort}/{database}"
+    connectionstring = os.environ.get("CONNECTION_STRING", connectionstring)
 
     return connectionstring
