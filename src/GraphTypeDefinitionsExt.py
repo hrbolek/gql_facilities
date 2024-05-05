@@ -8,6 +8,8 @@ from ._GraphResolvers import getLoadersFromInfo, IDType
 
 @classmethod
 async def resolve_reference(cls, info: strawberry.types.Info, id: IDType):
+    if id is None:
+        return None
     return cls(id=id)
 
 @strawberry.federation.type(extend=True, keys=["id"])

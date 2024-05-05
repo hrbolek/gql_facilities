@@ -109,13 +109,13 @@ class FacilityGQLModel:
         self, info: strawberry.types.Info
     ) -> List["FacilityGQLModel"]:
         loader = FacilityGQLModel.getLoader(info)
-        result = await loader.load(master_facility_id = self.id)
+        result = await loader.filter_by(master_facility_id = self.id)
         return result
 
     @strawberry.field(description="""Facility management group""")
     async def group(self, info: strawberry.types.Info) -> Optional["GroupGQLModel"]:
         from .GraphTypeDefinitionsExt import GroupGQLModel
-        return await GroupGQLModel.resolve_reference(id=self.group_id)
+        return await GroupGQLModel.resolve_reference(info, id=self.group_id)
 # endregion
     
 # region FacilityTypeGQLModel
