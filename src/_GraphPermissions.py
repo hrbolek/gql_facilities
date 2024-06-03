@@ -277,6 +277,7 @@ def RolesToList(roles: str = ""):
 
 @cache
 def OnlyForAuthentized(isList=False):
+    from ._GraphResolvers import getUserFromInfo
     class OnlyForAuthentized(strawberry.permission.BasePermission):
         message = "User is not authenticated"
 
