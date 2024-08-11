@@ -310,8 +310,10 @@ class FacilityTypeResultGQLModel:
     
 from uoishelpers.gqlpermissions import (
     OnlyForAuthentized,
-    OnlyForAdmins
+    MustBeOneOfPermission
+    # OnlyForAdmins
 )    
+OnlyForAdmins = MustBeOneOfPermission("administrátor")
 @strawberry.mutation(
     description="creates new presence",
     permission_classes=[
