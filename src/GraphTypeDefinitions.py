@@ -20,11 +20,13 @@ from ._GraphResolvers import (
     resolve_changedby,
 
     asPage,
-    
-    encapsulateInsert,
-    encapsulateUpdate    
     )
 
+from uoishelpers.resolvers import (
+    encapsulateDelete,
+    encapsulateInsert,
+    encapsulateUpdate
+)
 GroupGQLModel = Annotated["GroupGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 EventGQLModel = Annotated["EventGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 
@@ -223,6 +225,8 @@ class FacilityInputFilter:
     label: str
     capacity: int
     group_id: IDType
+    master_facility_id: IDType
+    facilitytype_id: IDType
 
 
 @strawberry.field(description="""Finds paged facilities""")
@@ -271,6 +275,72 @@ async def facility_type_page(
 #     result = await loader.execute_select(facilityStateTypePageStatement)
 #     return result
 # endregion
+
+
+
+# region FacilityType
+@strawberry.input(description="First datastructure for Facility type creation")
+class FacilityTypeInsertGQLModel:
+    name: str = strawberry.field(description="name of Facility type")
+    name_en: Optional[str] = strawberry.field(description="english name of Facility type", default=None)
+    id: Optional[IDType] = None
+    createdby: strawberry.Private[IDType] = None
+    rbacobject: Optional[IDType] = \
+        strawberry.field(description="group_id or user_id defines access rights", default=None)
+
+
+@strawberry.input(description="Datastructure for Facility type update")
+class FacilityTypeUpdateGQLModel:
+    id: IDType
+    lastchange: datetime.datetime
+    name: Optional[str] = None
+    name_en: Optional[str] = None
+    changedby: strawberry.Private[IDType] = None
+    rbacobject: strawberry.Private[IDType] = None
+
+@strawberry.type(description="""Result of facility type operation""")
+class FacilityTypeResultGQLModel:
+    id: IDType = None
+    msg: str = None
+
+    @strawberry.field(description="""Facility type""")
+    async def facility_type(self, info: strawberry.types.Info) -> Optional[FacilityTypeGQLModel]:
+        result = await FacilityTypeGQLModel.resolve_reference(info, self.id)
+        return result
+    
+from uoishelpers.gqlpermissions import (
+    OnlyForAuthentized,
+    OnlyForAdmins
+)    
+@strawberry.mutation(
+    description="creates new presence",
+    permission_classes=[
+        OnlyForAuthentized,
+        OnlyForAdmins
+    ])
+async def facility_type_insert(self, info: strawberry.types.Info, facility_type: FacilityTypeInsertGQLModel) -> FacilityTypeResultGQLModel:
+    return await encapsulateInsert(info, FacilityTypeGQLModel.getLoader(info), facility_type, FacilityTypeResultGQLModel(id=None, msg="ok"))
+
+@strawberry.mutation(
+    description="updates the facility",
+    permission_classes=[
+        OnlyForAuthentized,
+        OnlyForAdmins
+    ])
+async def facility_type_update(self, info: strawberry.types.Info, facility_type: FacilityTypeUpdateGQLModel) -> FacilityTypeResultGQLModel:
+    return await encapsulateUpdate(info, FacilityTypeGQLModel.getLoader(info), facility_type, FacilityTypeResultGQLModel(id=None, msg="ok"))
+
+@strawberry.mutation(
+    description="updates the facility",
+    permission_classes=[
+        OnlyForAuthentized,
+        OnlyForAdmins
+    ])
+async def facility_type_delete(self, info: strawberry.types.Info, id: IDType) -> FacilityTypeResultGQLModel:
+    return await encapsulateDelete(info, FacilityTypeGQLModel.getLoader(info), id, FacilityTypeResultGQLModel(id=None, msg="ok"))
+
+# endregion
+
 
 
 @strawberry.type(description="""Type for query root""")
@@ -369,6 +439,9 @@ async def facility_update(self, info: strawberry.types.Info, facility: FacilityU
 class Mutation:
     facility_insert = facility_insert
     facility_update = facility_update
+    facility_type_insert = facility_type_insert
+    facility_type_update = facility_type_update
+    facility_type_delete = facility_type_delete
     
 ###########################################################################################################################
 #
