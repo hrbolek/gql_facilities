@@ -273,7 +273,7 @@ def get_demodata():
 
 async def initDB(asyncSessionMaker):
 
-    DEMODATA = os.environ.get("DEMODATA", None)
+    DEMODATA = os.environ.get("DEMODATA", None) in ["True", "true"]    
     if DEMODATA:
         dbModels = [
             FacilityTypeModel,
