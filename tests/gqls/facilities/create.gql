@@ -1,0 +1,38 @@
+
+mutation ($id: UUID, $facilitytype_id: UUID, $name: String!, $valid: Boolean, $master_facility_id: UUID) {
+  result: facilityInsert(
+    facility: {id: $id, name: $name, facilitytypeId: $facilitytype_id, valid: $valid, masterFacilityId: $master_facility_id}
+  ) {
+    __typename
+    ...Error
+    ...Facility
+  }
+}
+
+
+fragment Error on FacilityGQLModelInsertError {
+	__typename
+}
+
+fragment Facility on FacilityGQLModel {
+  id
+  lastchange
+  name
+  nameEn
+  label
+  address
+  valid
+  capacity
+  geometry
+  geolocation
+  type {
+    id
+    name
+  }
+  subFacilities {
+    id
+  }
+  masterFacility {
+    id
+  }
+}

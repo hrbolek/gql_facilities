@@ -1,0 +1,27 @@
+query ($id: UUID!) {
+  result: facilityById(id: $id) {
+    __typename
+    ...Facility_
+  }
+}
+
+# fragment Facility on FacilityGQLModel {
+#   id
+#   lastchange
+#   name  
+#   nameEn
+#   label
+#   address
+#   valid
+#   capacity
+#   geometry
+#   geolocation
+#   type { id name }
+#   subFacilities { id }
+#   masterFacility { id }
+# }
+
+fragment Facility_ on FacilityGQLModel {
+  eventState { id }
+  group { id }
+}

@@ -10,30 +10,31 @@ from ._GraphResolvers import getLoadersFromInfo, IDType
 async def resolve_reference(cls, info: strawberry.types.Info, id: IDType):
     if id is None:
         return None
-    return cls(id=id)
+    _id = IDType(id) if isinstance(id, str) else id
+    return cls(id=_id)
 
-@strawberry.federation.type(extend=True, keys=["id"])
-class UserGQLModel:
-    id: IDType = strawberry.federation.field(external=True)
-    resolve_reference = resolve_reference
+# @strawberry.federation.type(extend=True, keys=["id"])
+# class UserGQLModel:
+#     id: IDType = strawberry.federation.field(external=True)
+#     # resolve_reference = resolve_reference
+#     resolve_reference
 
 
-@strawberry.federation.type(extend=True, keys=["id"])
-class GroupGQLModel:
-    id: IDType = strawberry.federation.field(external=True)
-    resolve_reference = resolve_reference
+# @strawberry.federation.type(extend=True, keys=["id"])
+# class GroupGQLModel:
+#     id: IDType = strawberry.federation.field(external=True)
+#     resolve_reference = resolve_reference
 
-@strawberry.federation.type(extend=True, keys=["id"])
-class EventGQLModel:
+# @strawberry.federation.type(extend=True, keys=["id"])
+# class EventGQLModel:
 
-    id: IDType = strawberry.federation.field(external=True)
-    resolve_reference = resolve_reference
+#     id: IDType = strawberry.federation.field(external=True)
+#     resolve_reference = resolve_reference
 
 
 @strawberry.federation.type(extend=True, keys=["id"])
 class RBACObjectGQLModel:
     id: IDType = strawberry.federation.field(external=True)
-    resolve_reference = resolve_reference
 
     @classmethod
     async def resolve_roles(cls, info: strawberry.types.Info, id: IDType):

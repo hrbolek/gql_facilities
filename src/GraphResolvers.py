@@ -31,15 +31,15 @@ from src.DBDefinitions import FacilityTypeModel, FacilityModel, EventFacilityMod
 #
 ###########################################################################################################################
 
-resolveFacilityById = createEntityByIdGetter(FacilityModel)
-resolveFacilityPage = createEntityGetter(FacilityModel)
-resolveFacilitiesByGroup = create1NGetter(FacilityModel, foreignKeyName="group_id")
-resolveFacilitiesByFacility = create1NGetter(
-    FacilityModel, foreignKeyName="master_facility_id"
-)
+# resolveFacilityById = createEntityByIdGetter(FacilityModel)
+# resolveFacilityPage = createEntityGetter(FacilityModel)
+# resolveFacilitiesByGroup = create1NGetter(FacilityModel, foreignKeyName="group_id")
+# resolveFacilitiesByFacility = create1NGetter(
+#     FacilityModel, foreignKeyName="master_facility_id"
+# )
 
-resolveFacityTypeById = createEntityByIdGetter(FacilityTypeModel)
+# resolveFacityTypeById = createEntityByIdGetter(FacilityTypeModel)
 
-facilityPageStatement = select(FacilityModel)
-facilityTypePageStatement = select(FacilityTypeModel)
-facilityStateTypePageStatement = select(EventFacilityStateType)
+# facilityPageStatement = select(FacilityModel)
+# facilityTypePageStatement = select(FacilityTypeModel)
+# facilityStateTypePageStatement = select(EventFacilityStateType)

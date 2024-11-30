@@ -1,0 +1,16 @@
+
+mutation ($id: UUID!, $lastchange: DateTime!) {
+  result: facilityTypeDelete(
+    facilityType: {id: $id, lastchange: $lastchange}
+  ) {
+    __typename
+    ...Error
+  }
+}
+
+
+fragment Error on FacilityTypeGQLModelDeleteError {
+	__typename
+  failed
+  msg
+}

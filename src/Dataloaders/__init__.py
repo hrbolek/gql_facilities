@@ -13,7 +13,7 @@ def createLoaders(asyncSessionMaker):
     for DBModel in BaseModel.registry.mappers:
         cls = DBModel.class_
         attrs[cls.__tablename__] = property(cache(createLambda(asyncSessionMaker, cls)))
-    
+        attrs[cls.__name__] = attrs[cls.__tablename__]
     # attrs["authorizations"] = property(cache(lambda self: AuthorizationLoader()))
     Loaders = type('Loaders', (), attrs)   
     return Loaders()

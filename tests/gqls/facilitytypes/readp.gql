@@ -1,0 +1,9 @@
+query ftp($skip: Int, $limit: Int){
+  facilityTypePage(skip: $skip, limit: $limit) {
+    __typename
+    id
+    name
+    nameEn
+    lastchange
+  }
+}

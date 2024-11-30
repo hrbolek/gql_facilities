@@ -1,0 +1,22 @@
+
+mutation ($id: UUID, $name: String!) {
+  result: facilityTypeInsert(
+    facilityType: {id: $id, name: $name}
+  ) {
+    __typename
+    ...Error
+    ...Facility
+  }
+}
+
+fragment Error on InsertError {
+	__typename
+	msg
+}
+
+fragment Facility on FacilityTypeGQLModel {
+  id
+  lastchange
+  name
+  nameEn
+}

@@ -6,7 +6,7 @@ import logging
 
 IDType = uuid.UUID
 
-from ._GraphPermissions import OnlyForAuthentized
+from uoishelpers.gqlpermissions import OnlyForAuthentized
 
 def getLoadersFromInfo(info: strawberry.types.Info):
     result = info.context.get("loaders", None)
@@ -28,49 +28,140 @@ async def resolve_reference(cls, info: strawberry.types.Info, id: IDType):
     if id is None: return None
     if isinstance(id, str): id = IDType(id)
     loader = cls.getLoader(info)
-    result = await loader.load(id)
-    if result is not None:
+    dbrow = await loader.load(id)
+    result = None
+    if dbrow is not None:
+        result = cls(_data=dbrow)
+        # result._data = dbrow
         # result._type_definition = cls._type_definition  # little hack :)
-        result.__strawberry_definition__ = cls.__strawberry_definition__  # little hack :)
+        # result.__strawberry_definition__ = cls.__strawberry_definition__  # little hack :)
     return result
 
+def resolve_field(*, self, field_name):
+    _data = getattr(self, "_data", self)
+    value = getattr(_data, field_name, None)
+    # print(f"query for {field_name}@{_data}={value}")
+    return value
 
+
+from strawberry.types.base import StrawberryList, StrawberryOptional
+def resolveResultType(info: strawberry.types.Info):
+    return_type = info.return_type
+    if (return_type.__class__.__name__ == "StrawberryOptional"):
+        return_type = return_type.of_type
+
+    if (return_type.__class__.__name__ == "StrawberryList"):
+        return_type = return_type.of_type
+
+    if (isinstance(return_type, strawberry.LazyType)):
+        return_type = return_type.resolve_type()
+    return return_type
+
+
+def default_scalar_resolver(*, fkey_field_name):
+    cache = {"executor": None}
+    def getexecutor(info: strawberry.Info, cache=cache):
+        executor = cache["executor"]
+        if executor is None:
+            return_type = resolveResultType(info)
+            executor = return_type.resolve_reference
+            cache["executor"] = executor
+        return executor
+    async def result(self, info: strawberry.types.Info):
+        value = resolve_field(self=self, field_name=fkey_field_name)
+        executor = getexecutor(info=info)
+        gql_value = await executor(info=info, id=value)
+        return gql_value
+    return result
+
+def default_vector_resolver(*, fkey_field_name, whereType):
+    async def result(self, info: strawberry.Info, skip: typing.Optional[int]=0, limit: typing.Optional[int]=10, orderby: typing.Optional[str]=None, where: typing.Optional[whereType]=None):
+        value = resolve_field(self=self, field_name="id")
+        extendedfilter = {fkey_field_name: value}
+        listType = type(self)
+        loader = listType.getLoader(info=info)
+        where = None if where is None else strawberry.asdict(where)
+        results = await loader.page(skip=skip, limit=limit, orderby=orderby, where=where, extendedfilter=extendedfilter)
+        return (listType(result) for result in results)
+    return result
+
+sentinel = "893b4f74-c4b7-4b35-b638-6592b5ff48ea"
+class VectorResolver:
+    @classmethod
+    def __class_getitem__(cls, item):
+        listType = item
+        print(f"PageResolver[{listType}]", flush=True)
+        def result(*, fkey_field_name, whereType):
+            print(f"PageResolver.result", flush=True)
+            async def resolver(self, info: strawberry.Info, skip: typing.Optional[int]=0, limit: typing.Optional[int]=10, orderby: typing.Optional[str]=None, where: typing.Optional[whereType]=None) -> typing.List[listType]:
+                value = getattr(self, fkey_field_name, sentinel)
+                assert (value != sentinel), f"missing value {listType}.{fkey_field_name}"
+                extendedfilter = {fkey_field_name: value}
+                loader = listType.getLoader(info=info)
+                where = None if where is None else strawberry.asdict(where)
+                results = await loader.page(skip=skip, limit=limit, orderby=orderby, where=where, extendedfilter=extendedfilter)
+                return (listType.from_sqlalchemy(result) for result in results)        
+            return resolver       
+        return result
+
+class PageResolver:
+    @classmethod
+    def __class_getitem__(cls, item):
+        listType = item
+        print(f"PageResolver[{listType}]", flush=True)
+        def result(*, whereType):
+            print(f"PageResolver.result", flush=True)
+            async def resolver(self, info: strawberry.Info, skip: typing.Optional[int]=0, limit: typing.Optional[int]=10, orderby: typing.Optional[str]=None, where: typing.Optional[whereType]=None) -> typing.List[listType]:
+                # listType = type(self)
+                # listType = self.type_arg
+                loader = listType.getLoader(info=info)
+                where = None if where is None else strawberry.asdict(where)
+                results = await loader.page(skip=skip, limit=limit, orderby=orderby, where=where)
+                return (listType.from_sqlalchemy(result) for result in results)        
+            return resolver       
+        return result
 
 @strawberry.field(
     description="""Entity primary key""",
-    # permission_classes=[OnlyForAuthentized()]
+    permission_classes=[OnlyForAuthentized]
     )
 def resolve_id(self) -> IDType:
-    return self.id
+    return resolve_field(self=self, field_name="id")
+    # return self.id
+
 
 @strawberry.field(
     description="""Name """,
-    # permission_classes=[OnlyForAuthentized()]
+    permission_classes=[OnlyForAuthentized]
     )
-def resolve_name(self) -> str:
-    return self.name
+def resolve_name(self) -> typing.Optional[str]:
+    return resolve_field(self=self, field_name="name")
+    # return self.name
 
 @strawberry.field(
     description="""English name""",
-    #permission_classes=[OnlyForAuthentized()]
+    permission_classes=[OnlyForAuthentized]
     )
-def resolve_name_en(self) -> str:
-    result = self.name_en if self.name_en else ""
-    return result
+def resolve_name_en(self) -> typing.Optional[str]:
+    return resolve_field(self=self, field_name="name_en")
+    # result = self.name_en if self.name_en else ""
+    # return result
 
 @strawberry.field(
     description="""Time of last update""",
-    #permission_classes=[OnlyForAuthentized()]
+    permission_classes=[OnlyForAuthentized]
     )
-def resolve_lastchange(self) -> datetime.datetime:
-    return self.lastchange
+def resolve_lastchange(self) -> typing.Optional[datetime.datetime]:
+    return resolve_field(self=self, field_name="lastchange")
+    # return self.lastchange
 
 @strawberry.field(
     description="""Time of entity introduction""",
-    #permission_classes=[OnlyForAuthentized()]
+    permission_classes=[OnlyForAuthentized]
     )
 def resolve_created(self) -> typing.Optional[datetime.datetime]:
-    return self.created
+    return resolve_field(self=self, field_name="created")
+    # return self.created
 
 UserGQLModel = typing.Annotated["UserGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 
@@ -80,21 +171,25 @@ async def resolve_user(user_id):
     return result
     
 @strawberry.field(description="""Who created entity""",
-        permission_classes=[OnlyForAuthentized()])
+        permission_classes=[OnlyForAuthentized])
 async def resolve_createdby(self) -> typing.Optional["UserGQLModel"]:
-    return await resolve_user(self.createdby)
+    createdby = resolve_field(self=self, field_name="createdby")
+    return await resolve_user(createdby)
 
 @strawberry.field(description="""Who made last change""",
-        permission_classes=[OnlyForAuthentized()])
+        permission_classes=[OnlyForAuthentized])
 async def resolve_changedby(self) -> typing.Optional["UserGQLModel"]:
-    return await resolve_user(self.changedby)
+    changedby = resolve_field(self=self, field_name="changedby")
+    return await resolve_user(changedby)
 
 RBACObjectGQLModel = typing.Annotated["RBACObjectGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 @strawberry.field(description="""Who made last change""",
-        permission_classes=[OnlyForAuthentized()])
+        permission_classes=[OnlyForAuthentized]
+        )
 async def resolve_rbacobject(self, info: strawberry.types.Info) -> typing.Optional[RBACObjectGQLModel]:
     from .GraphTypeDefinitionsExt import RBACObjectGQLModel
-    result = None if self.rbacobject is None else await RBACObjectGQLModel.resolve_reference(info, self.rbacobject)
+    rbacobject = resolve_field(self=self, field_name="rbacobject")
+    result = await RBACObjectGQLModel.resolve_reference(info, rbacobject)
     return result
 
 resolve_result_id: IDType = strawberry.field(description="primary key of CU operation object")

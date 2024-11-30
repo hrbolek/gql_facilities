@@ -1,24 +1,18 @@
+import asyncio
 from typing import List, Union, Optional, Annotated
 import typing
 import strawberry as strawberry
 import datetime
 import dataclasses
+import strawberry.types
 from uoishelpers.resolvers import createInputs
+from uoishelpers.gqlpermissions import OnlyForAuthentized
+from sqlalchemy.orm import attributes
 
 from ._GraphResolvers import (
     getLoadersFromInfo,
-    
+    resolve_field,
     IDType,
-
-    resolve_reference,
-    resolve_id,
-    resolve_name,
-    resolve_name_en,
-    resolve_lastchange,
-    resolve_created,
-    resolve_createdby,
-    resolve_changedby,
-
     asPage,
     )
 
@@ -39,85 +33,137 @@ class FacilityGQLModel:
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).facilities
 
-    resolve_reference = resolve_reference
-    id = resolve_id
-    name = resolve_name
-    name_en = resolve_name_en
+    _data: strawberry.Private[object]
 
-    lastchange = resolve_lastchange
-    created = resolve_created
-    createdby = resolve_createdby
-    changedby = resolve_changedby
+    from ._GraphResolvers import (
+        resolve_reference,
+        resolve_id as id,
+
+        resolve_name as name,
+        resolve_name_en as name_en,
+
+        resolve_lastchange as lastchange,
+        resolve_created as created,
+
+        resolve_createdby as createdby,
+        resolve_changedby as changedby,
+        resolve_rbacobject as rbacobject
+    )
+
 
     @strawberry.field(
-        description="""Facility full name assigned by an administrator"""
+        description="""Facility full name assigned by an administrator""",
+        permission_classes=[OnlyForAuthentized]
         )
-    def label(self) -> Optional[str]:
-        return self.label
+    def label(self, info: strawberry.types.Info) -> Optional[str]:
+        # print(f'{info.context["user"]}')
+        # return self.label
+        return resolve_field(self=self, field_name="label")
 
     # address
     @strawberry.field(
-        description="""Facility address"""
+        description="""Facility address""",
+        permission_classes=[OnlyForAuthentized]
     )
     def address(self) -> Optional[str]:
-        return self.address
+        # return self.address
+        return resolve_field(self=self, field_name="address")
 
     # valid
     @strawberry.field(
-        description="""is the facility still valid"""
+        description="""is the facility still valid""",
+        permission_classes=[OnlyForAuthentized]
     )
     def valid(self) -> Optional[bool]:
-        return self.valid
+        # return self.valid
+        return resolve_field(self=self, field_name="valid")
 
     @strawberry.field(
-        description="""Facility's capacity"""
+        description="""Facility's capacity""",
+        permission_classes=[OnlyForAuthentized]
     )
     def capacity(self) -> Optional[int]:
-        return self.capacity
+        # return self.capacity
+        return resolve_field(self=self, field_name="capacity")
+
 
     # manager_id
 
     # address
     @strawberry.field(
-        description="""Facility geometry (SVG)"""
+        description="""Facility geometry (SVG)""",
+        permission_classes=[OnlyForAuthentized]
     )
     def geometry(self) -> Optional[str]:
-        return self.geometry
+        # return self.geometry
+        return resolve_field(self=self, field_name="geometry")
 
     @strawberry.field(
-        description="""Facility geo address (WGS84+zoom)"""
+        description="""Facility geo address (WGS84+zoom)""",
+        permission_classes=[OnlyForAuthentized]
     )
     def geolocation(self) -> Optional[str]:
-        return self.geolocation
+        # return self.geolocation
+        return resolve_field(self=self, field_name="geolocation")
 
-    @strawberry.field(description="""Facility type""")
+    @strawberry.field(
+        description="""Facility type""",
+        permission_classes=[OnlyForAuthentized]
+        )
     async def type(self, info: strawberry.types.Info) -> Optional["FacilityTypeGQLModel"]:
-        result = await FacilityTypeGQLModel.resolve_reference(info=info, id=self.facilitytype_id)
+        if "type" in attributes.instance_state(self._data).dict:
+            # print("type already loaded")
+            result = FacilityTypeGQLModel(_data=self._data.type)
+            # result._data = self.type
+        else:
+            facilitytype_id = resolve_field(self=self, field_name="facilitytype_id")
+            result = await FacilityTypeGQLModel.resolve_reference(info=info, id=facilitytype_id)
         return result
 
-    @strawberry.field(description="""Intermediate entity linking the event and facility""")
-    async def event_state(self, info: strawberry.types.Info) -> Optional["FacilityEventStateTypeGQLModel"]:
+    @strawberry.field(
+            description="""Intermediate entity linking the event and facility""",
+            permission_classes=[OnlyForAuthentized]
+            )
+    async def event_state(self, info: strawberry.types.Info) -> List["FacilityEventStateTypeGQLModel"]:
         loader = FacilityEventStateTypeGQLModel.getLoader(info)
-        result = await loader.load(self.id)
-        return result
+        loader = getLoadersFromInfo(info=info).facilities_events
+        id = resolve_field(self=self, field_name="id")
+        rows = await loader.filter_by(facility_id=id)
+        futures = (FacilityEventStateTypeGQLModel.resolve_reference(info=info, id=row.state_id) for row in rows)
+        results = await asyncio.gather(*futures)
+        return results
 
-    @strawberry.field(description="""Facility above this""")
+    @strawberry.field(
+            description="""Facility above this""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def master_facility(self, info: strawberry.types.Info) -> Optional["FacilityGQLModel"]:
-        result = await FacilityGQLModel.resolve_reference(info=info, id=self.master_facility_id)
+        master_facility_id = resolve_field(self=self, field_name="id")
+        result = await FacilityGQLModel.resolve_reference(info=info, id=master_facility_id)
         return result
 
-    @strawberry.field(description="""Facilities inside facility (like buildings in an areal)""")
+    @strawberry.field(
+            description="""Facilities inside facility (like buildings in an areal)""",
+            permission_classes=[OnlyForAuthentized])
     async def sub_facilities(
         self, info: strawberry.types.Info
     ) -> List["FacilityGQLModel"]:
         loader = FacilityGQLModel.getLoader(info)
-        result = await loader.filter_by(master_facility_id = self.id)
+        id = resolve_field(self=self, field_name="id")
+        rows = await loader.filter_by(master_facility_id = id)
+        # return result
+        futures = (FacilityGQLModel.resolve_reference(info=info, id=row.id) for row in rows)
+        result = await asyncio.gather(*futures)
         return result
 
-    @strawberry.field(description="""Facility management group""")
+    @strawberry.field(
+            description="""Facility management group""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def group(self, info: strawberry.types.Info) -> Optional["GroupGQLModel"]:
         from .GraphTypeDefinitionsExt import GroupGQLModel
-        return await GroupGQLModel.resolve_reference(info, id=self.group_id)
+        group_id = resolve_field(self=self, field_name="group_id")
+        return await GroupGQLModel.resolve_reference(info, id=group_id)
 # endregion
     
 # region FacilityTypeGQLModel
@@ -130,16 +176,23 @@ class FacilityTypeGQLModel:
     @classmethod
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).facilitytypes
-    resolve_reference = resolve_reference
 
-    id = resolve_id
-    name = resolve_name
-    name_en = resolve_name_en
+    _data: strawberry.Private[object]
 
-    lastchange = resolve_lastchange
-    created = resolve_created
-    createdby = resolve_createdby
-    changedby = resolve_changedby
+    from ._GraphResolvers import (
+        resolve_reference,
+        resolve_id as id,
+
+        resolve_name as name,
+        resolve_name_en as name_en,
+
+        resolve_lastchange as lastchange,
+        resolve_created as created,
+
+        resolve_createdby as createdby,
+        resolve_changedby as changedby,
+        resolve_rbacobject as rbacobject
+    )
 
 # endregion
     
@@ -151,29 +204,45 @@ class FacilityEventGQLModel:
     @classmethod
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).facilities_events
-    resolve_reference = resolve_reference
 
-    id = resolve_id
-    name = resolve_name
-    name_en = resolve_name_en
+    _data: strawberry.Private[object]
 
-    lastchange = resolve_lastchange
-    created = resolve_created
-    createdby = resolve_createdby
-    changedby = resolve_changedby
+    from ._GraphResolvers import (
+        resolve_reference,
+        resolve_id as id,
 
-    @strawberry.field(description="""the event""")
+        resolve_name as name,
+        resolve_name_en as name_en,
+
+        resolve_lastchange as lastchange,
+        resolve_created as created,
+
+        resolve_createdby as createdby,
+        resolve_changedby as changedby,
+        resolve_rbacobject as rbacobject
+    )
+
+    @strawberry.field(
+            description="""the event""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def event(self) -> Optional["EventGQLModel"]:
         from .GraphTypeDefinitionsExt import EventGQLModel
         return await EventGQLModel.resolve_reference(id=self.event_id)
 
-    @strawberry.field(description="""the facility""")
+    @strawberry.field(
+            description="""the facility""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def facility(self, info: strawberry.types.Info) -> Optional["FacilityGQLModel"]:
         #print()
         result = await FacilityGQLModel.resolve_reference(info=info, id=self.facility_id)
         return result
 
-    @strawberry.field(description="""the facility state (reserved for an event, lesson planned etc.)""")
+    @strawberry.field(
+            description="""the facility state (reserved for an event, lesson planned etc.)""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def state(self, info: strawberry.types.Info) -> Optional["FacilityEventStateTypeGQLModel"]:
         result = await FacilityEventStateTypeGQLModel.resolve_reference(info=info, id=self.state_id)
         return result
@@ -188,16 +257,23 @@ class FacilityEventStateTypeGQLModel:
     @classmethod
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).facilityeventstatetypes
-    resolve_reference = resolve_reference
 
-    id = resolve_id
-    name = resolve_name
-    name_en = resolve_name_en
+    _data: strawberry.Private[object]
 
-    lastchange = resolve_lastchange
-    created = resolve_created
-    createdby = resolve_createdby
-    changedby = resolve_changedby
+    from ._GraphResolvers import (
+        resolve_reference,
+        resolve_id as id,
+
+        resolve_name as name,
+        resolve_name_en as name_en,
+
+        resolve_lastchange as lastchange,
+        resolve_created as created,
+
+        resolve_createdby as createdby,
+        resolve_changedby as changedby,
+        resolve_rbacobject as rbacobject
+    )
 
 # endregion
     
@@ -209,7 +285,10 @@ class FacilityEventStateTypeGQLModel:
 ###########################################################################################################################
 
 # region Facility
-@strawberry.field(description="""Finds an facility their id""")
+@strawberry.field(
+        description="""Finds an facility their id""",
+        permission_classes=[OnlyForAuthentized]
+        )
 async def facility_by_id(
     self, info: strawberry.types.Info, id: IDType
 ) -> Union[FacilityGQLModel, None]:
@@ -228,20 +307,33 @@ class FacilityInputFilter:
     master_facility_id: IDType
     facilitytype_id: IDType
 
-
-@strawberry.field(description="""Finds paged facilities""")
-@asPage
-async def facility_page(
-    self, info: strawberry.types.Info, 
-    skip: Optional[int] = 0, limit: Optional[int] = 10, 
-    where: Optional[FacilityInputFilter] = None
-) -> List[FacilityGQLModel]:
-    return FacilityGQLModel.getLoader(info)
+from ._GraphResolvers import default_page_resolver
+# @strawberry.field(
+#         description="""Finds paged facilities""",
+#         permission_classes=[OnlyForAuthentized]
+#         )
+# @asPage
+# async def facility_page(
+#     self, info: strawberry.types.Info, 
+#     skip: Optional[int] = 0, limit: Optional[int] = 10, 
+#     where: Optional[FacilityInputFilter] = None
+# ) -> List[FacilityGQLModel]:
+#     return FacilityGQLModel.getLoader(info)
     
+facility_page = strawberry.field(
+        description="""Finds paged facilities""",
+        permission_classes=[OnlyForAuthentized],
+        graphql_type=List[FacilityGQLModel],
+        resolver=default_page_resolver(whereType=FacilityInputFilter)
+        )
+
 # endregion
 
 # region FacilityType
-@strawberry.field(description="""Finds an workflow by their id""")
+@strawberry.field(
+        description="""Finds an facility type by its id""",
+        permission_classes=[OnlyForAuthentized]
+        )
 async def facility_type_by_id(
     self, info: strawberry.types.Info, id: IDType
 ) -> Optional[FacilityTypeGQLModel]:
@@ -254,15 +346,24 @@ class FacilityTypeInputFilter:
     name: str
     name_en: str
 
-@strawberry.field(description="""Returns all facility types""")
-@asPage
-async def facility_type_page(
-    self, info: strawberry.types.Info, 
-    skip: Optional[int] = 0, limit: Optional[int] = 10, 
-    where: Optional[FacilityTypeInputFilter] = None
-) -> List[FacilityTypeGQLModel]:
-    return FacilityTypeGQLModel.getLoader(info)
+# @strawberry.field(
+#         description="""Returns all facility types""",
+#         permission_classes=[OnlyForAuthentized]
+#         )
+# @asPage
+# async def facility_type_page(
+#     self, info: strawberry.types.Info, 
+#     skip: Optional[int] = 0, limit: Optional[int] = 10, 
+#     where: Optional[FacilityTypeInputFilter] = None
+# ) -> List[FacilityTypeGQLModel]:
+#     return FacilityTypeGQLModel.getLoader(info)
 
+facility_type_page = strawberry.field(
+        description="""Returns all facility types""",
+        permission_classes=[OnlyForAuthentized],
+        graphql_type=List[FacilityTypeGQLModel],
+        resolver=default_page_resolver(whereType=FacilityTypeInputFilter)
+        )
 # endregion
 
 # region FacilityEventStateTypeGQLModel
@@ -303,7 +404,10 @@ class FacilityTypeResultGQLModel:
     id: IDType = None
     msg: str = None
 
-    @strawberry.field(description="""Facility type""")
+    @strawberry.field(
+            description="""Facility type""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def facility_type(self, info: strawberry.types.Info) -> Optional[FacilityTypeGQLModel]:
         result = await FacilityTypeGQLModel.resolve_reference(info, self.id)
         return result
@@ -315,7 +419,7 @@ from uoishelpers.gqlpermissions import (
 )    
 OnlyForAdmins = MustBeOneOfPermission("administrátor")
 @strawberry.mutation(
-    description="creates new presence",
+    description="Creates new facility type",
     permission_classes=[
         OnlyForAuthentized,
         OnlyForAdmins
@@ -324,7 +428,7 @@ async def facility_type_insert(self, info: strawberry.types.Info, facility_type:
     return await encapsulateInsert(info, FacilityTypeGQLModel.getLoader(info), facility_type, FacilityTypeResultGQLModel(id=None, msg="ok"))
 
 @strawberry.mutation(
-    description="updates the facility",
+    description="Updates the facility type",
     permission_classes=[
         OnlyForAuthentized,
         OnlyForAdmins
@@ -333,7 +437,7 @@ async def facility_type_update(self, info: strawberry.types.Info, facility_type:
     return await encapsulateUpdate(info, FacilityTypeGQLModel.getLoader(info), facility_type, FacilityTypeResultGQLModel(id=None, msg="ok"))
 
 @strawberry.mutation(
-    description="updates the facility",
+    description="Deletes the facility type",
     permission_classes=[
         OnlyForAuthentized,
         OnlyForAdmins
@@ -347,7 +451,10 @@ async def facility_type_delete(self, info: strawberry.types.Info, id: IDType) ->
 
 @strawberry.type(description="""Type for query root""")
 class Query:
-    @strawberry.field(description="""Finds an workflow by their id""")
+    @strawberry.field(
+            description="""Finds an workflow by their id""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def say_hello_facility(
         self, info: strawberry.types.Info, id: IDType
     ) -> Union[str, None]:
@@ -375,25 +482,25 @@ class Query:
 
 from typing import Optional
 # region Facility
-@strawberry.input
+@strawberry.input(description="initial attributes for facility insert")
 class FacilityInsertGQLModel:
-    name: str
-    facilitytype_id: Optional[IDType] = None
-    id: Optional[IDType] = None
+    name: str = strawberry.field(description="name of the new facility")
+    facilitytype_id: Optional[IDType] = strawberry.field(description="facility type", default=None)
+    id: Optional[IDType] = strawberry.field(description="primary key (UUID), could be client generated", default=None)
     startdate: Optional[datetime.datetime] = datetime.datetime.now()
     enddate: Optional[datetime.datetime] = datetime.datetime.now() + datetime.timedelta(minutes = 30)
-    name_en: Optional[str] = ""
-    label: Optional[str] = ""
-    address: Optional[str] = ""
-    valid: Optional[bool] = True
-    capacity: Optional[int] = 0
-    geometry: Optional[str] = ""
-    geolocation: Optional[str] = ""
+    name_en: Optional[str] = strawberry.field(description="english name of facility", default="")
+    label: Optional[str] = strawberry.field(description="full name (including masterfacility)", default="")
+    address: Optional[str] = strawberry.field(description="postal address", default="")
+    valid: Optional[bool] = strawberry.field(description="if facility exists", default=True)
+    capacity: Optional[int] = strawberry.field(description="facility capacity", default=0)
+    geometry: Optional[str] = strawberry.field(description="SVG overlay for leaflet", default="")
+    geolocation: Optional[str] = strawberry.field(description="WSGBLX;WGSBLY;ZOOM", default="")
 
-    group_id: Optional[IDType] = None
-    master_facility_id: Optional[IDType] = None
+    group_id: Optional[IDType] = strawberry.field(description="group which is responsible for management of this facility", default=None)
+    master_facility_id: Optional[IDType] = strawberry.field(description="to which facility this facility belongs", default=None)
 
-@strawberry.input
+@strawberry.input(description="")
 class FacilityUpdateGQLModel:
     lastchange: datetime.datetime
     id: IDType
@@ -416,23 +523,35 @@ class FacilityUpdateGQLModel:
     startdate: Optional[datetime.datetime] = None
     enddate: Optional[datetime.datetime] = None
     
-@strawberry.type
+@strawberry.type(description="")
 class FacilityResultGQLModel:
     id: IDType = None
     msg: str = None
 
-    @strawberry.field(description="""Result of user operation""")
+    @strawberry.field(
+            description="""Result of user operation""",
+            permission_classes=[OnlyForAuthentized]
+            )
     async def facility(self, info: strawberry.types.Info) -> Union[FacilityGQLModel, None]:
         result = await FacilityGQLModel.resolve_reference(info, self.id)
         return result
 
 
-@strawberry.mutation
+@strawberry.mutation(
+        description="",
+        permission_classes=[
+            OnlyForAuthentized,
+            OnlyForAdmins
+        ]
+        )
 async def facility_insert(self, info: strawberry.types.Info, facility: FacilityInsertGQLModel) -> FacilityResultGQLModel:
     return await encapsulateInsert(info, FacilityGQLModel.getLoader(info), facility, FacilityResultGQLModel(msg="ok", id=facility.id))
 
-@strawberry.mutation
-async def facility_update(self, info: strawberry.types.Info, facility: FacilityUpdateGQLModel) -> FacilityResultGQLModel:
+@strawberry.mutation(
+        description="",
+        permission_classes=[OnlyForAuthentized]
+        )
+async def facility_update(self, info: strawberry.types.Info, facility: typing.Annotated[FacilityUpdateGQLModel, strawberry.argument(description="desc")]) -> FacilityResultGQLModel:
     return await encapsulateUpdate(info, FacilityGQLModel.getLoader(info), facility, FacilityResultGQLModel(msg="ok", id=facility.id))
     
 # endregion
@@ -454,4 +573,15 @@ class Mutation:
 #
 ###########################################################################################################################
 
-schema = strawberry.federation.Schema(Query, mutation = Mutation)
+from .GraphTypeDefinitionsExt import UserGQLModel, GroupGQLModel, EventGQLModel, RBACObjectGQLModel
+from .query import Query
+from .mutation import Mutation
+schema = strawberry.federation.Schema(
+    query=Query, 
+    mutation = Mutation, 
+    types=(UserGQLModel, GroupGQLModel, EventGQLModel, RBACObjectGQLModel), 
+    extensions=[]
+)
+
+from uoishelpers.schema import WhoAmIExtension
+schema.extensions.append(WhoAmIExtension)

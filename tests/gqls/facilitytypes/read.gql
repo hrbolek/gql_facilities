@@ -1,0 +1,9 @@
+query ftid($id: UUID!){
+  facilityTypeById(id: $id) {
+    __typename
+    id
+    name
+    nameEn
+    lastchange
+  }
+}

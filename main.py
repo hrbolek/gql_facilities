@@ -1,14 +1,14 @@
 import os
 import strawberry
 import socket
+import asyncio
 
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse, FileResponse
 from strawberry.fastapi import GraphQLRouter
-from strawberry.asgi import GraphQL
 
 import logging
 import logging.handlers
@@ -16,7 +16,6 @@ import logging.handlers
 from src.GraphTypeDefinitions import schema
 from src.DBDefinitions import startEngine, ComposeConnectionString
 from src.DBFeeder import initDB
-from uoishelpers.authenticationMiddleware import createAuthentizationSentinel
 
 # region logging setup
 
@@ -76,37 +75,24 @@ async def RunOnceAndReturnSessionMaker():
 
     result = await startEngine(
         connectionstring=connectionString, makeDrop=makeDrop, makeUp=True
-    )
-
-    logging.info(f"initializing system structures")
+    )   
 
     ###########################################################################################################################
     #
     # zde definujte do funkce asyncio.gather
     # vlozte asynchronni funkce, ktere maji data uvest do prvotniho konzistentniho stavu
-    await initDB(result)
+    async def initDBAndReport():
+        logging.info(f"initializing system structures")
+        await initDB(result)
+        logging.info(f"all done")
+        print(f"all done")
+
+    asyncio.create_task(coro=initDBAndReport())
     #
     #
     ###########################################################################################################################
-    logging.info(f"all done")
+    
     return result
-
-# endregion
-
-# region Sentinel setup
-JWTPUBLICKEYURL = os.environ.get("JWTPUBLICKEYURL", "http://localhost:8000/oauth/publickey")
-JWTRESOLVEUSERPATHURL = os.environ.get("JWTRESOLVEUSERPATHURL", "http://localhost:8000/oauth/userinfo")
-
-apolloQuery = "query __ApolloGetServiceDefinition__ { _service { sdl } }"
-graphiQLQuery = "\n    query IntrospectionQuery {\n      __schema {\n        \n        queryType { name }\n        mutationType { name }\n        subscriptionType { name }\n        types {\n          ...FullType\n        }\n        directives {\n          name\n          description\n          \n          locations\n          args(includeDeprecated: true) {\n            ...InputValue\n          }\n        }\n      }\n    }\n\n    fragment FullType on __Type {\n      kind\n      name\n      description\n      \n      fields(includeDeprecated: true) {\n        name\n        description\n        args(includeDeprecated: true) {\n          ...InputValue\n        }\n        type {\n          ...TypeRef\n        }\n        isDeprecated\n        deprecationReason\n      }\n      inputFields(includeDeprecated: true) {\n        ...InputValue\n      }\n      interfaces {\n        ...TypeRef\n      }\n      enumValues(includeDeprecated: true) {\n        name\n        description\n        isDeprecated\n        deprecationReason\n      }\n      possibleTypes {\n        ...TypeRef\n      }\n    }\n\n    fragment InputValue on __InputValue {\n      name\n      description\n      type { ...TypeRef }\n      defaultValue\n      isDeprecated\n      deprecationReason\n    }\n\n    fragment TypeRef on __Type {\n      kind\n      name\n      ofType {\n        kind\n        name\n        ofType {\n          kind\n          name\n          ofType {\n            kind\n            name\n            ofType {\n              kind\n              name\n              ofType {\n                kind\n                name\n                ofType {\n                  kind\n                  name\n                  ofType {\n                    kind\n                    name\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  "
-
-
-sentinel = createAuthentizationSentinel(
-    JWTPUBLICKEY=JWTPUBLICKEYURL,
-    JWTRESOLVEUSERPATH=JWTRESOLVEUSERPATHURL,
-    queriesWOAuthentization=[apolloQuery, graphiQLQuery],
-    onAuthenticationError=lambda item: JSONResponse({"data": None, "errors": ["Unauthenticated", item.query, f"{item.variables}"]}, 
-    status_code=401))
 
 # endregion
 
@@ -122,18 +108,18 @@ async def get_context(request: Request):
     #from src.Dataloaders import createLoadersContext, createUgConnectionContext
     from src.Dataloaders import createLoadersContext
     context = createLoadersContext(asyncSessionMaker)
-    i = Item(query = "")
+    # i = Item(query = "")
     # i.query = ""
     # i.variables = {}
-    logging.info(f"before sentinel current user is {request.scope.get('user', None)}")
-    await sentinel(request, i)
-    logging.info(f"after sentinel current user is {request.scope.get('user', None)}")
+    # logging.info(f"before sentinel current user is {request.scope.get('user', None)}")
+    # await sentinel(request, i)
+    # logging.info(f"after sentinel current user is {request.scope.get('user', None)}")
     # connectionContext = createUgConnectionContext(request=request)
     # result = {**context, **connectionContext}
     result = {**context}
     result["request"] = request
-    result["user"] = request.scope.get("user", None)
-    logging.info(f"context created {result}")
+    # result["user"] = request.scope.get("user", None)
+    # logging.info(f"context created {result}")
     return result
 
 @asynccontextmanager
@@ -149,35 +135,20 @@ graphql_app = GraphQLRouter(
     context_getter=get_context
 )
 
-@app.get("/gql")
-async def graphiql(request: Request):
-    return await graphql_app.render_graphql_ide(request)
+app.include_router(graphql_app, prefix="/gql")
 
-@app.post("/gql")
-async def apollo_gql(request: Request, item: Item):
-    DEMOE = os.getenv("DEMO", None)
+@app.get("/voyager", response_class=FileResponse)
+async def graphiql():
+    realpath = os.path.realpath("./voyager.html")
+    return realpath
 
-    sentinelResult = await sentinel(request, item)
-    if DEMOE in ["False", "false"]:
-        if sentinelResult:
-            logging.info(f"sentinel test failed for query={item} \n request={request}")
-            return sentinelResult
-        logging.info(f"sentinel test passed for query={item}")
-    else:
-        request.scope["user"] = {"id": "2d9dc5ca-a4a2-11ed-b9df-0242ac120003"}
-        logging.info(f"sentinel skippend because of DEMO mode for query={item} for user {request.scope['user']}")
-    try:
-        context = await get_context(request)
-        schemaresult = await schema.execute(query=item.query, variable_values=item.variables, operation_name=item.operationName, context_value=context)
-    except Exception as e:
-        logging.info(f"error during schema execute {e}")
-        return {"data": None, "errors": [f"{type(e).__name__}: {e}"]}
-    
-    # logging.info(f"schema execute result \n{schemaresult}")
-    result = {"data": schemaresult.data}
-    if schemaresult.errors:
-        result["errors"] = [f"{error}" for error in schemaresult.errors]
-    return result
+import prometheus_client
+@app.get("/metrics")
+async def metrics():
+    return Response(
+        content=prometheus_client.generate_latest(), 
+        media_type=prometheus_client.CONTENT_TYPE_LATEST
+        )
 
 logging.info("All initialization is done")
 
@@ -200,8 +171,8 @@ def envAssertDefined(name, default=None):
 
 DEMO = envAssertDefined("DEMO", None)
 GQLUG_ENDPOINT_URL = envAssertDefined("GQLUG_ENDPOINT_URL", None)
-JWTPUBLICKEYURL = envAssertDefined("JWTPUBLICKEYURL", None)
-JWTRESOLVEUSERPATHURL = envAssertDefined("JWTRESOLVEUSERPATHURL", None)
+# JWTPUBLICKEYURL = envAssertDefined("JWTPUBLICKEYURL", None)
+# JWTRESOLVEUSERPATHURL = envAssertDefined("JWTRESOLVEUSERPATHURL", None)
 
 assert (DEMO in ["True", "true", "False", "false"]), "DEMO environment variable can have only `True` or `False` values"
 DEMO = DEMO in ["True", "true"]
@@ -234,6 +205,6 @@ else:
 logging.info(f"DEMO = {DEMO}")
 logging.info(f"SYSLOGHOST = {SYSLOGHOST}")
 logging.info(f"GQLUG_ENDPOINT_URL = {GQLUG_ENDPOINT_URL}")
-logging.info(f"JWTPUBLICKEYURL = {JWTPUBLICKEYURL}")
-logging.info(f"JWTRESOLVEUSERPATHURL = {JWTRESOLVEUSERPATHURL}")
+# logging.info(f"JWTPUBLICKEYURL = {JWTPUBLICKEYURL}")
+# logging.info(f"JWTRESOLVEUSERPATHURL = {JWTRESOLVEUSERPATHURL}")
 # endregion

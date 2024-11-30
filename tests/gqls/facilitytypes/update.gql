@@ -1,0 +1,21 @@
+mutation ($id: UUID!, $lastchange: DateTime!, $name: String!) {
+  result: facilityTypeUpdate(
+    facilityType: {id: $id, lastchange: $lastchange, name: $name}
+  ) {
+    __typename
+    ...Facility
+    ...Error
+  }
+}
+
+fragment Error on FacilityTypeGQLModelUpdateError {
+	__typename
+  failed
+}
+
+fragment Facility on FacilityTypeGQLModel {
+  id
+  lastchange
+  name
+  nameEn
+}
