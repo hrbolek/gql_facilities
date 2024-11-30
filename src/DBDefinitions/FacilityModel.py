@@ -35,7 +35,7 @@ class FacilityModel(BaseModel):
 
     @hybrid_property
     def type_id(self):
-        return self.facilitytype_id    
+        return self.facilitytype_id
 
     masterfacility = relationship("FacilityModel", viewonly=True) # https://docs.sqlalchemy.org/en/20/orm/self_referential.html
     subfacilities = relationship ("FacilityModel", remote_side="FacilityModel.id", viewonly=True, uselist=True) # https://docs.sqlalchemy.org/en/20/orm/self_referential.html

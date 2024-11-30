@@ -26,26 +26,6 @@ class FacilityEventGQLModel(BaseGQLModel):
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).EventFacilityModel
 
-    # _data: strawberry.Private[object]
-
-    # @classmethod
-    # def get_table_resolvers(cls):
-    #     # raise NotImplementedError()
-    #     return {
-    #         "id": lambda row: row.id,
-    #         "lastchange": lambda row: row.lastchange,
-    #         "created": lambda row: row.lastchange,
-    #         "createdby_id": lambda row: row.createdby_id,
-    #         "changedby_id": lambda row: row.changedby_id,
-    #         "rbacobject_id": lambda row: row.rbacobject_id,
-            
-    #         "event_id": lambda row: row.event_id,
-    #         "facility_id": lambda row: row.facility_id,
-    #         "state_id": lambda row: row.state_id,
-            
-    #         "_data": lambda row: row,
-    #     }
-
     event_id: typing.Optional[IDType] = strawberry.field(description="")
     facility_id: typing.Optional[IDType] = strawberry.field(description="")
     state_id: typing.Optional[IDType] = strawberry.field(description="")

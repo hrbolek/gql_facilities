@@ -1,36 +1,31 @@
+import uuid
 import sqlalchemy
 import datetime
 
-from sqlalchemy import (
-    Column,
-    String,
-    BigInteger,
-    Integer,
-    DateTime,
-    ForeignKey,
-    Sequence,
-    Table,
-    Boolean,
-    Uuid
-)
-from sqlalchemy.dialects.postgresql import UUID
-
-from sqlalchemy.orm import relationship
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import MappedAsDataclass, Mapped, mapped_column
-from sqlalchemy.ext.hybrid import hybrid_property
-import uuid
-from typing import Optional
 
-def newUuidAsString():
-    return f"{uuid.uuid4()}"
+def UUIDFKey(ForeignKeyArg=None, **kwargs):
+    newkwargs = {
+        **kwargs,
+        "index": True, 
+        "primary_key": False, 
+        "default": None,
+        "nullable": True,
+        "comment": "foreign key"
+    }
+    return mapped_column(**newkwargs)
 
-
-def UUIDFKey(comment=None, nullable=True, **kwargs):
-    return Column(Uuid, index=True, comment=comment, nullable=nullable, **kwargs)
-
-def UUIDColumn():
-    return Column(Uuid, primary_key=True, comment="primary key", default=uuid.uuid4)
+def UUIDColumn(**kwargs):
+    newkwargs = {
+        **kwargs,
+        "index": True, 
+        "primary_key": True, 
+        "default_factory": uuid.uuid4, 
+        "comment": "primary key"
+    }
+    return mapped_column(**newkwargs)
 
 ###########################################################################################################################
 #
@@ -40,12 +35,12 @@ def UUIDColumn():
 
 
 class BaseModel(MappedAsDataclass, DeclarativeBase):
-    id: Mapped[uuid.UUID] = mapped_column(index=True, primary_key=True, default_factory=uuid.uuid4)
+    id: Mapped[uuid.UUID] = UUIDColumn(index=True, primary_key=True, default_factory=uuid.uuid4)
 
-    created: Mapped[datetime.datetime] = mapped_column(default=None, nullable=True, server_default=sqlalchemy.sql.func.now())
-    lastchange: Mapped[datetime.datetime] = mapped_column(default=None, nullable=True, server_default=sqlalchemy.sql.func.now())
+    created: Mapped[datetime.datetime] = mapped_column(default=None, nullable=True, server_default=sqlalchemy.sql.func.now(), comment="date time of creation")
+    lastchange: Mapped[datetime.datetime] = mapped_column(default=None, nullable=True, server_default=sqlalchemy.sql.func.now(), comment="date time stamp")
 
-    createdby_id: Mapped[uuid.UUID] = mapped_column(default=None, nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
-    changedby_id: Mapped[uuid.UUID] = mapped_column(default=None, nullable=True)#Column(ForeignKey("users.id"), index=True, nullable=True)
-    rbacobject_id: Mapped[uuid.UUID] = mapped_column(default=None, nullable=True, comment="id rbacobject")#Column(ForeignKey("users.id"), index=True, nullable=True)
+    createdby_id: Mapped[uuid.UUID] = UUIDFKey(ForeignKey("users.id"), comment="id of user who created this entity")
+    changedby_id: Mapped[uuid.UUID] = UUIDFKey(ForeignKey("users.id"), comment="id of user who changed this entity")
+    rbacobject_id: Mapped[uuid.UUID] = UUIDFKey(comment="id rbacobject")
 ###

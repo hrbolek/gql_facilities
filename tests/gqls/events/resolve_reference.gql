@@ -1,0 +1,13 @@
+query Event_resolve_reference($id: UUID!) {
+    _entities(representations: [{ __typename: "EventGQLModel", id: $id }]) {
+        __typename
+        ...Event
+    }
+}
+
+fragment Event on EventGQLModel {
+    id
+    reservations {
+        id
+    }
+}

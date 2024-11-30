@@ -10,9 +10,3 @@ fragment Error on FacilityEventGQLModelDeleteError {
   input
   failed
 }
-
-fragment FE on FacilityEventGQLModel {
-  id
-  facility { id }
-  event { id }
-}

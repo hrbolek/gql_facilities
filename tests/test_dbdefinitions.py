@@ -1,5 +1,5 @@
 import pytest
-from shared import prepare_demodata, prepare_in_memory_sqllite
+from .shared import prepare_demodata, prepare_in_memory_sqllite
 
 @pytest.mark.asyncio
 async def test_table_users_feed():

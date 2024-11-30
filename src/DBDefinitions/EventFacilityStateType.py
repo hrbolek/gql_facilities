@@ -1,11 +1,9 @@
 from sqlalchemy import (
     Column,
-    String,
-    
+    String,    
 )
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-
-from .BaseModel import BaseModel, UUIDFKey
+from sqlalchemy.orm import Mapped, mapped_column
+from .BaseModel import BaseModel
 
 class EventFacilityStateType(BaseModel):
     __tablename__ = "facilityeventstatetypes"

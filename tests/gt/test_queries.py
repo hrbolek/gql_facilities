@@ -94,9 +94,42 @@ async def test_reservation_update(SchemaExecutorDemo):
 
     pass
 
-# test_reservation_delete = createTest2(
-#     tableName="facilities_events",
-#     variables={
-#         "id": "e622232d-e34d-4efc-8094-74ace62c7989",
-#     }
-# )
+@pytest.mark.asyncio
+async def test_reservation_delete(SchemaExecutorDemo):
+    tableName="facilities_events"
+    variables={
+        "id": "e622232d-e34d-4efc-8094-74ace62c7989",
+        "facility_id": "7dcf3d10-3a41-4c36-9700-99d885a1e474",
+        "state_id": "83e7e264-464d-47ce-8ccd-a5b962fdeed4"
+    }
+    queryRead = getQuery(tableName=tableName, queryName="read")
+    queryDelete = getQuery(tableName=tableName, queryName="delete")
+    _variables = variables
+
+    variable_values = {**variables}
+    variable_values["id"] = variables["facility_id"]
+    responseJson = await SchemaExecutorDemo(query=queryRead, variable_values=variable_values)
+    responseData = responseJson.get("data")
+    assert responseData is not None, f"got no data while asking for lastchange atribute {responseJson}"
+    
+    [responseEntity, *_] = responseData.values()
+    assert responseEntity is not None, f"got no entity while asking for lastchange atribute {responseJson}"
+    reservations = responseEntity["reservations"]
+    reservation = next(filter(lambda r: r["id"] == variables["id"], reservations), None)
+    assert reservation is not None, f"reservation not found {reservations}"
+    lastchange = reservation.get("lastchange", None)
+    assert lastchange is not None, f"query read for table {tableName} is not asking for lastchange which is needed"
+    _variables["lastchange"] = lastchange
+    responseJson = await SchemaExecutorDemo(query=queryDelete, variable_values=_variables)
+    assert "errors" not in responseJson, f"update failed {responseJson}"
+    logging.info(f"query for {queryDelete} with {_variables}, no tested response")
+
+    pass
+
+text_event_resolve_reference = createTest2(
+    tableName="events",
+    queryName="resolve_reference",
+    variables={
+        "id": "a64871f8-2308-48ff-adb2-33fb0b0741f1"
+    }
+)

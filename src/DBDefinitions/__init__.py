@@ -13,7 +13,7 @@ import logging
 # logging.basicConfig()
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
-from .BaseModel import BaseModel
+from .BaseModel import BaseModel, UUIDColumn, UUIDFKey
 from .FacilityModel import FacilityModel
 from .EventFacilityModel import EventFacilityModel
 from .EventFacilityStateType import EventFacilityStateType
