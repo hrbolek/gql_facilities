@@ -16,7 +16,14 @@ Do not use http://127.0.0.1/gql
 
 Tables are defined in way which allows to work with dbrows as with dataclasses.
 This enables conversion into dict structures and use them in GQLModel init.
-It is propably the shortest conversion from dbrow into GQLModel
+It is propably the shortest conversion from dbrow into GQLModel.
+
+
+## Keypoints
+
+For authentization is used WhoAmIExtension which sends a query to gql_ug. 
+With this query, roles of logged user are revealed and stored into context.
+This is very usefull for resolving permissions defined by rolename.
 
 ## Usefull commands
 

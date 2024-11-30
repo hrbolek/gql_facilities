@@ -2,22 +2,17 @@ import asyncio
 import dataclasses
 import datetime
 import typing
-import uuid
 import strawberry
 
-from sqlalchemy.orm import attributes
-from graphql.language import DirectiveLocation
-import strawberry.types
 from uoishelpers.resolvers import getLoadersFromInfo, createInputs, getUserFromInfo
 from uoishelpers.gqlpermissions import (
     OnlyForAuthentized,
-    MustBeOneOfPermission
-    # OnlyForAdmins
-)
+    SimpleInsertPermission, 
+    SimpleUpdatePermission, 
+    SimpleDeletePermission
+)    
 
 from .BaseGQLModel import BaseGQLModel, IDType
-
-OnlyForAdmins = MustBeOneOfPermission("administrátor")
 
 GroupGQLModel = typing.Annotated["GroupGQLModel", strawberry.lazy(".GroupGQLModel")]
 EventGQLModel = typing.Annotated["EventGQLModel", strawberry.lazy(".EventGQLModel")]
@@ -33,32 +28,7 @@ class FacilityGQLModel(BaseGQLModel):
     @classmethod
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).FacilityModel
-    
-    # @classmethod
-    # def get_table_resolvers(cls):
-    #     # raise NotImplementedError()
-    #     return {
-    #         "id": lambda row: row.id,
-    #         "lastchange": lambda row: row.lastchange,
-    #         "created": lambda row: row.lastchange,
-    #         "createdby_id": lambda row: row.createdby_id,
-    #         "changedby_id": lambda row: row.changedby_id,
-    #         "rbacobject_id": lambda row: row.rbacobject_id,
-    #         "name": lambda row: row.name,
-    #         "name_en": lambda row: row.name_en,
-    #         "label": lambda row: row.label,
-    #         "address": lambda row: row.address,
-    #         "valid": lambda row: row.valid,
-    #         "capacity": lambda row: row.capacity,
-    #         "geometry": lambda row: row.geometry,
-    #         "geolocation": lambda row: row.geolocation,
-    #         "group_id": lambda row: row.group_id,
-    #         "facilitytype_id": lambda row: row.facilitytype_id,
-    #         "master_facility_id": lambda row: row.master_facility_id,
-            
-    #         "_data": lambda row: row,
-    #     }
-
+ 
     name: typing.Optional[str] = strawberry.field(
         default=None,
         description="""Facility name assigned by an administrator""",
@@ -312,7 +282,8 @@ from uoishelpers.resolvers import InsertError, Insert, UpdateError, Update, Dele
 @strawberry.mutation(
         description="Updates the facility",
         permission_classes=[
-            OnlyForAuthentized
+            OnlyForAuthentized,
+            SimpleUpdatePermission[FacilityGQLModel](roles=["administrátor", "administrátor budov"])
         ]
     )
 async def facility_update(self, info: strawberry.types.Info, facility: typing.Annotated[FacilityUpdateGQLModel, strawberry.argument(description="desc")]) -> typing.Union[FacilityGQLModel, UpdateError[FacilityGQLModel]]:
@@ -320,11 +291,10 @@ async def facility_update(self, info: strawberry.types.Info, facility: typing.An
 
 @strawberry.mutation(
         description="Creates a facility, available only for admins",
-        # permission_classes=[
-        #     OnlyForAuthentized,
-        #     # OnlyForAdmins
-        # ],
-        # directives=[RequiresRoleDirective]        
+        permission_classes=[
+            OnlyForAuthentized,
+            SimpleInsertPermission[FacilityGQLModel](roles=["administrátor", "administrátor budov"])
+        ]
     )
 async def facility_insert(self, info: strawberry.types.Info, facility: FacilityInsertGQLModel) -> typing.Union[FacilityGQLModel, InsertError[FacilityGQLModel]]:
     return await Insert[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
@@ -333,9 +303,8 @@ async def facility_insert(self, info: strawberry.types.Info, facility: FacilityI
         description="Delete the facility, available only for admins",
         permission_classes=[
             OnlyForAuthentized,
-            # OnlyForAdmins
-        ],
-        # directives=[RequiresRoleDirective]
+            SimpleDeletePermission[FacilityGQLModel](roles=["administrátor", "administrátor budov"])
+        ]
     )
 async def facility_delete(self, info: strawberry.types.Info, facility: FacilityDeleteGQLModel) -> typing.Optional[DeleteError[FacilityGQLModel]]:
     return await Delete[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)

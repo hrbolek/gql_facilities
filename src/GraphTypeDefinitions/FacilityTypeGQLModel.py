@@ -7,14 +7,21 @@ import strawberry.types
 from uoishelpers.resolvers import getLoadersFromInfo, createInputs
 from uoishelpers.gqlpermissions import (
     OnlyForAuthentized,
-    MustBeOneOfPermission
-    # OnlyForAdmins
+    SimpleInsertPermission, 
+    SimpleUpdatePermission, 
+    SimpleDeletePermission
+)    
+from uoishelpers.resolvers import (
+    InsertError, 
+    Insert, 
+    UpdateError, 
+    Update, 
+    DeleteError, 
+    Delete
 )
-
-from .BaseGQLModel import BaseGQLModel, IDType
 from uoishelpers.resolvers import PageResolver
 
-OnlyForAdmins = MustBeOneOfPermission("administrátor")
+from .BaseGQLModel import BaseGQLModel, IDType
 
 # region FacilityTypeGQLModel
 
@@ -94,21 +101,11 @@ class FacilityTypeDeleteGQLModel:
 
     lastchange: datetime.datetime = strawberry.field(description="timestamp")
    
-from uoishelpers.gqlpermissions import (
-    OnlyForAuthentized,
-    SimpleInsertPermission, 
-    SimpleUpdatePermission, 
-    SimpleDeletePermission
-)    
-
-# from .CUD import InsertError, Insert, UpdateError, Update, DeleteError, Delete
-from uoishelpers.resolvers import InsertError, Insert, UpdateError, Update, DeleteError, Delete
 @strawberry.mutation(
     description="Creates new facility type",
     permission_classes=[
         OnlyForAuthentized,
         SimpleInsertPermission[FacilityTypeGQLModel](roles=["administrátor"])
-        # OnlyForAdmins
     ])
 async def facility_type_insert(self, info: strawberry.types.Info, facility_type: FacilityTypeInsertGQLModel) -> typing.Union[FacilityTypeGQLModel, InsertError[FacilityTypeGQLModel]]:
     return await Insert[FacilityTypeGQLModel].DoItSafeWay(info=info, entity=facility_type)
@@ -118,7 +115,6 @@ async def facility_type_insert(self, info: strawberry.types.Info, facility_type:
     permission_classes=[
         OnlyForAuthentized,
         SimpleUpdatePermission[FacilityTypeGQLModel](roles=["administrátor"]),
-        # OnlyForAdmins
     ])
 async def facility_type_update(self, info: strawberry.types.Info, facility_type: FacilityTypeUpdateGQLModel) -> typing.Union[FacilityTypeGQLModel, UpdateError[FacilityTypeGQLModel]]:
     return await Update[FacilityTypeGQLModel].DoItSafeWay(info=info, entity=facility_type)
