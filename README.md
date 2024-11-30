@@ -1,3 +1,25 @@
+# Single member od graphql federation
+
+## Dependency
+
+Depends on GQL_UG endpoint.
+To enable running, uois stack must be deployed.
+See https://github.com/hrbolek/_uois
+
+To enable interaction with webinterface, log in webinterface in uois.
+See http://localhost:33001/
+
+Be sure that you use webinterface on http://localohost:8001/gql.
+Do not use http://127.0.0.1/gql
+
+## State of the Art
+
+Tables are defined in way which allows to work with dbrows as with dataclasses.
+This enables conversion into dict structures and use them in GQLModel init.
+It is propably the shortest conversion from dbrow into GQLModel
+
+## Usefull commands
+
 ```bash
 uvicorn main:app --env-file environment.txt --port 8001
 ```
@@ -6,9 +28,7 @@ uvicorn main:app --env-file environment.txt --port 8001
 pytest --cov-report term-missing --cov=src --log-cli-level=INFO -x
 ```
 
-```bash
-pytest -k "test_FillDataViaGQL" --cov-report term-missing --cov=src --log-cli-level=INFO -x
-```
+## Some prompts for chatgpt
 
 ```chatgpt
 convert next python code into mapped class (SQLAlchemy) with use of mapped_column and properly annotate it
