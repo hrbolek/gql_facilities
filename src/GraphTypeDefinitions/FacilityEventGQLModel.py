@@ -2,6 +2,7 @@ import typing
 import strawberry
 import datetime
 
+import strawberry.types
 from uoishelpers.resolvers import getLoadersFromInfo
 
 from .BaseGQLModel import BaseGQLModel, IDType
@@ -25,26 +26,29 @@ class FacilityEventGQLModel(BaseGQLModel):
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).EventFacilityModel
 
-    _data: strawberry.Private[object]
+    # _data: strawberry.Private[object]
 
-    @classmethod
-    def get_table_resolvers(cls):
-        # raise NotImplementedError()
-        return {
-            "id": lambda row: row.id,
-            "lastchange": lambda row: row.lastchange,
-            "created": lambda row: row.lastchange,
-            "createdby_id": lambda row: row.createdby_id,
-            "changedby_id": lambda row: row.changedby_id,
-            "rbacobject_id": lambda row: row.rbacobject_id,
+    # @classmethod
+    # def get_table_resolvers(cls):
+    #     # raise NotImplementedError()
+    #     return {
+    #         "id": lambda row: row.id,
+    #         "lastchange": lambda row: row.lastchange,
+    #         "created": lambda row: row.lastchange,
+    #         "createdby_id": lambda row: row.createdby_id,
+    #         "changedby_id": lambda row: row.changedby_id,
+    #         "rbacobject_id": lambda row: row.rbacobject_id,
             
-            "event_id": lambda row: row.event_id,
-            "facility_id": lambda row: row.facility_id,
-            "state_id": lambda row: row.state_id,
+    #         "event_id": lambda row: row.event_id,
+    #         "facility_id": lambda row: row.facility_id,
+    #         "state_id": lambda row: row.state_id,
             
-            "_data": lambda row: row,
-        }
+    #         "_data": lambda row: row,
+    #     }
 
+    event_id: typing.Optional[IDType] = strawberry.field(description="")
+    facility_id: typing.Optional[IDType] = strawberry.field(description="")
+    state_id: typing.Optional[IDType] = strawberry.field(description="")
 
     @strawberry.field(
             description="""the event""",
@@ -52,9 +56,9 @@ class FacilityEventGQLModel(BaseGQLModel):
                 OnlyForAuthentized
             ]
             )
-    async def event(self) -> typing.Optional["EventGQLModel"]:
+    async def event(self, info: strawberry.types.Info) -> typing.Optional["EventGQLModel"]:
         from .EventGQLModel import EventGQLModel
-        return await EventGQLModel.resolve_reference(id=self.event_id)
+        return await EventGQLModel.resolve_reference(info=info, id=self.event_id)
 
     @strawberry.field(
             description="""the facility""",
@@ -86,7 +90,7 @@ class FacilityReservationInsertGQLModel:
     facility_id: IDType =  strawberry.field(description="facility for reservation")
     event_id: IDType = strawberry.field(description="event for reservation")
     state_id: IDType = strawberry.field(description="initial state of reservation")
-    createdby_id: strawberry.Private[IDType]
+    createdby_id: strawberry.Private[IDType] = None
     rbacobject_id: typing.Optional[IDType] = \
         strawberry.field(description="group_id or user_id defines access rights", default=None)
 

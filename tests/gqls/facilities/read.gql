@@ -19,4 +19,7 @@ fragment Facility on FacilityGQLModel {
   type { id name }
   subFacilities { id }
   masterFacility { id }
+  createdby { id }
+  changedby { id }
+  rbacobject { id }
 }

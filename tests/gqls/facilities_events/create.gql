@@ -1,0 +1,19 @@
+mutation M($id: UUID, $facility_id: UUID!, $event_id: UUID!, $state_id: UUID!) {
+  facilityReservationCreate(facilityReservation: {id: $id, facilityId: $facility_id, eventId: $event_id, stateId: $state_id}) {
+    __typename
+    ...Error
+    ...FE
+  }
+}
+
+fragment Error on InsertError {
+  msg
+  input
+  failed
+}
+
+fragment FE on FacilityEventGQLModel {
+  id
+  facility { id }
+  event { id }
+}

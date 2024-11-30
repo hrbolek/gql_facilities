@@ -1,0 +1,19 @@
+mutation M($id: UUID!, $lastchange: DateTime!, $state_id: UUID!) {
+  facilityReservationUpdate(facilityReservation: {id: $id, lastchange: $lastchange, stateId: $state_id}) {
+    __typename
+    ...Error
+    ...FE
+  }
+}
+
+fragment Error on FacilityEventGQLModelUpdateError {
+  msg
+  input
+  failed
+}
+
+fragment FE on FacilityEventGQLModel {
+  id
+  facility { id }
+  event { id }
+}

@@ -21,17 +21,6 @@ async def resolve_reference(cls, info: strawberry.types.Info, id: IDType, **othe
     keys=["id"], description="""Entity representing a Facility"""
 )
 class BaseGQLModel:
-    @classmethod
-    def get_table_resolvers(cls):
-        # raise NotImplementedError()
-        return {
-            "id": lambda row: row.id,
-            "lastchange": lambda row: row.lastchange,
-            "created": lambda row: row.lastchange,
-            "createdby_id": lambda row: row.createdby_id,
-            "changedby_id": lambda row: row.changedby_id,
-            "rbacobject_id": lambda row: row.rbacobject_id,
-        }
     
     @classmethod
     def getLoader(cls, info: strawberry.types.Info):
@@ -45,8 +34,7 @@ class BaseGQLModel:
 
     @classmethod
     async def load_with_loader(cls, info: strawberry.types.Info, id: uuid.UUID):
-        if id is None:
-            return None
+        if id is None: return None
 
         _id = IDType(id) if isinstance(id, str) else id
         loader = cls.getLoader(info=info)

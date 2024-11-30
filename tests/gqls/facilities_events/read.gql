@@ -22,6 +22,18 @@ query ($id: UUID!) {
 # }
 
 fragment Facility_ on FacilityGQLModel {
-  reservations { id }
+  reservations { 
+      id 
+      lastchange
+      event { 
+          id 
+      }
+      facility {
+          id
+      }
+      state {
+          id
+      }
+  }
   group { id }
 }

@@ -182,15 +182,15 @@ class FacilityGQLModel(BaseGQLModel):
             description="""Intermediate entity linking the event and facility""",
             permission_classes=[OnlyForAuthentized]
             )
-    async def event_state(self, info: strawberry.types.Info) -> typing.List["FacilityEventStateTypeGQLModel"]:
-        from .FacilityEventStateTypeGQLModel import FacilityEventStateTypeGQLModel
-        loader = FacilityEventStateTypeGQLModel.getLoader(info)
-        loader = getLoadersFromInfo(info=info).facilities_events
+    async def reservations(self, info: strawberry.types.Info) -> typing.List["FacilityEventGQLModel"]:
+        from .FacilityEventGQLModel import FacilityEventGQLModel
+        loader = FacilityEventGQLModel.getLoader(info)
+        # loader = getLoadersFromInfo(info=info).facilities_events
         # id = resolve_field(self=self, field_name="id")
         id = self.id
         rows = await loader.filter_by(facility_id=id)
-        futures = (FacilityEventStateTypeGQLModel.resolve_reference(info=info, id=row.state_id) for row in rows)
-        results = await asyncio.gather(*futures)
+        results = (FacilityEventGQLModel.from_dataclass(row) for row in rows)
+        # results = await asyncio.gather(*futures)
         return results
 
     @strawberry.field(

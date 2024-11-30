@@ -17,7 +17,6 @@ from uoishelpers.resolvers import PageResolver
 OnlyForAdmins = MustBeOneOfPermission("administrátor")
 
 # region FacilityTypeGQLModel
-# from src.GraphResolvers import facilityTypePageStatement
 
 @strawberry.federation.type(
     keys=["id"], description="""Entity representing a facility type"""

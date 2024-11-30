@@ -129,7 +129,7 @@ def createByIdTest2(tableName, queryName=None, variables=None, expectedJson=None
             assert checkExpected(responseJson, _expectedJson), f"unexpected response \n{responseJson}\ninstead\n{_expectedJson}"
         else:
             assert "errors" not in responseJson, f"got errors {responseJson['errors']}"
-            logging.debug(f"query for {queryRead} with {_variables}, no tested response")
+            logging.info(f"query for {queryRead}@{tableName} with {_variables}, no tested response, got\n{responseJson}")
         
     return result_test
 
