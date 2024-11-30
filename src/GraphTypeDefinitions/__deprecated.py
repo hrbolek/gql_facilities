@@ -10,7 +10,6 @@ from uoishelpers.gqlpermissions import OnlyForAuthentized
 from sqlalchemy.orm import attributes
 
 from ._GraphResolvers import (
-    getLoadersFromInfo,
     resolve_field,
     IDType,
     asPage,
@@ -19,8 +18,12 @@ from ._GraphResolvers import (
 from uoishelpers.resolvers import (
     encapsulateDelete,
     encapsulateInsert,
-    encapsulateUpdate
+    encapsulateUpdate,
+    getLoadersFromInfo
 )
+
+from .BaseGQLModel import BaseGQLModel
+
 GroupGQLModel = Annotated["GroupGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 EventGQLModel = Annotated["EventGQLModel", strawberry.lazy(".GraphTypeDefinitionsExt")]
 
@@ -28,7 +31,7 @@ EventGQLModel = Annotated["EventGQLModel", strawberry.lazy(".GraphTypeDefinition
 @strawberry.federation.type(
     keys=["id"], description="""Entity representing a Facility"""
 )
-class FacilityGQLModel:
+class FacilityGQLModel(BaseGQLModel):
     @classmethod
     def getLoader(cls, info: strawberry.types.Info):
         return getLoadersFromInfo(info).facilities
@@ -50,74 +53,47 @@ class FacilityGQLModel:
         resolve_rbacobject as rbacobject
     )
 
-
-    @strawberry.field(
+    label: Optional[str] = strawberry.field(
         description="""Facility full name assigned by an administrator""",
         permission_classes=[OnlyForAuthentized]
         )
-    def label(self, info: strawberry.types.Info) -> Optional[str]:
-        # print(f'{info.context["user"]}')
-        # return self.label
-        return resolve_field(self=self, field_name="label")
 
-    # address
-    @strawberry.field(
+    address: Optional[str] = strawberry.field(
         description="""Facility address""",
         permission_classes=[OnlyForAuthentized]
-    )
-    def address(self) -> Optional[str]:
-        # return self.address
-        return resolve_field(self=self, field_name="address")
+        )
 
     # valid
-    @strawberry.field(
+    valid: Optional[str] = strawberry.field(
         description="""is the facility still valid""",
         permission_classes=[OnlyForAuthentized]
     )
-    def valid(self) -> Optional[bool]:
-        # return self.valid
-        return resolve_field(self=self, field_name="valid")
 
-    @strawberry.field(
+    capacity: Optional[int] = strawberry.field(
         description="""Facility's capacity""",
         permission_classes=[OnlyForAuthentized]
     )
-    def capacity(self) -> Optional[int]:
-        # return self.capacity
-        return resolve_field(self=self, field_name="capacity")
-
 
     # manager_id
 
     # address
-    @strawberry.field(
+    geometry: Optional[str] = strawberry.field(
         description="""Facility geometry (SVG)""",
         permission_classes=[OnlyForAuthentized]
     )
-    def geometry(self) -> Optional[str]:
-        # return self.geometry
-        return resolve_field(self=self, field_name="geometry")
 
-    @strawberry.field(
+    geolocation: Optional[str] = strawberry.field(
         description="""Facility geo address (WGS84+zoom)""",
         permission_classes=[OnlyForAuthentized]
     )
-    def geolocation(self) -> Optional[str]:
-        # return self.geolocation
-        return resolve_field(self=self, field_name="geolocation")
 
     @strawberry.field(
         description="""Facility type""",
         permission_classes=[OnlyForAuthentized]
         )
     async def type(self, info: strawberry.types.Info) -> Optional["FacilityTypeGQLModel"]:
-        if "type" in attributes.instance_state(self._data).dict:
-            # print("type already loaded")
-            result = FacilityTypeGQLModel(_data=self._data.type)
-            # result._data = self.type
-        else:
-            facilitytype_id = resolve_field(self=self, field_name="facilitytype_id")
-            result = await FacilityTypeGQLModel.resolve_reference(info=info, id=facilitytype_id)
+        facilitytype_id = resolve_field(self=self, field_name="facilitytype_id")
+        result = await FacilityTypeGQLModel.resolve_reference(info=info, id=facilitytype_id)
         return result
 
     @strawberry.field(
@@ -127,8 +103,7 @@ class FacilityGQLModel:
     async def event_state(self, info: strawberry.types.Info) -> List["FacilityEventStateTypeGQLModel"]:
         loader = FacilityEventStateTypeGQLModel.getLoader(info)
         loader = getLoadersFromInfo(info=info).facilities_events
-        id = resolve_field(self=self, field_name="id")
-        rows = await loader.filter_by(facility_id=id)
+        rows = await loader.filter_by(facility_id=self.id)
         futures = (FacilityEventStateTypeGQLModel.resolve_reference(info=info, id=row.state_id) for row in rows)
         results = await asyncio.gather(*futures)
         return results
@@ -138,8 +113,7 @@ class FacilityGQLModel:
             permission_classes=[OnlyForAuthentized]
             )
     async def master_facility(self, info: strawberry.types.Info) -> Optional["FacilityGQLModel"]:
-        master_facility_id = resolve_field(self=self, field_name="id")
-        result = await FacilityGQLModel.resolve_reference(info=info, id=master_facility_id)
+        result = await FacilityGQLModel.resolve_reference(info=info, id=self.master_facility_id)
         return result
 
     @strawberry.field(
@@ -149,9 +123,7 @@ class FacilityGQLModel:
         self, info: strawberry.types.Info
     ) -> List["FacilityGQLModel"]:
         loader = FacilityGQLModel.getLoader(info)
-        id = resolve_field(self=self, field_name="id")
-        rows = await loader.filter_by(master_facility_id = id)
-        # return result
+        rows = await loader.filter_by(master_facility_id = self.id)
         futures = (FacilityGQLModel.resolve_reference(info=info, id=row.id) for row in rows)
         result = await asyncio.gather(*futures)
         return result

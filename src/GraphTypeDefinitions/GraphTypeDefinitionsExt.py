@@ -1,10 +1,11 @@
+import uuid
 import strawberry
 import dataclasses
 import datetime
 
 from typing import List, Optional
-from ._GraphResolvers import getLoadersFromInfo, IDType
-
+from ._GraphResolvers import IDType
+from uoishelpers.resolvers import getLoadersFromInfo
 
 @classmethod
 async def resolve_reference(cls, info: strawberry.types.Info, id: IDType):
