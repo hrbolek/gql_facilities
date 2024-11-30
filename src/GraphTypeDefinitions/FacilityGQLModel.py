@@ -4,13 +4,23 @@ import datetime
 import typing
 import strawberry
 
-from uoishelpers.resolvers import getLoadersFromInfo, createInputs, getUserFromInfo
 from uoishelpers.gqlpermissions import (
     OnlyForAuthentized,
     SimpleInsertPermission, 
     SimpleUpdatePermission, 
     SimpleDeletePermission
 )    
+from uoishelpers.resolvers import (
+    getLoadersFromInfo, 
+    createInputs,
+
+    InsertError, 
+    Insert, 
+    UpdateError, 
+    Update, 
+    DeleteError, 
+    Delete
+)
 
 from .BaseGQLModel import BaseGQLModel, IDType
 
@@ -277,8 +287,6 @@ class FacilityDeleteGQLModel:
     lastchange: datetime.datetime = strawberry.field(description="timestamp")
     id: IDType = strawberry.field(description="primary key")
 
-# from .CUD import InsertError, Insert, UpdateError, Update, DeleteError, Delete
-from uoishelpers.resolvers import InsertError, Insert, UpdateError, Update, DeleteError, Delete
 @strawberry.mutation(
         description="Updates the facility",
         permission_classes=[
@@ -297,6 +305,9 @@ async def facility_update(self, info: strawberry.types.Info, facility: typing.An
         ]
     )
 async def facility_insert(self, info: strawberry.types.Info, facility: FacilityInsertGQLModel) -> typing.Union[FacilityGQLModel, InsertError[FacilityGQLModel]]:
+    # facility.rbacobject_id can be defined from frontend, if not, facility.group_id is used
+    # if facility.rbacobject_id == facility.group_id, roles can be checked / derived from assigned group
+    facility.rbacobject_id = facility.rbacobject_id if facility.rbacobject_id else facility.group_id
     return await Insert[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
 
 @strawberry.mutation(
