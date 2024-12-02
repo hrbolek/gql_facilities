@@ -240,7 +240,6 @@ facility_page = strawberry.field(
         resolver=PageResolver[FacilityGQLModel](whereType=FacilityInputFilter)
         )    
 
-
 # region Facility
 @strawberry.input(description="initial attributes for facility insert")
 class FacilityInsertGQLModel:
@@ -258,9 +257,9 @@ class FacilityInsertGQLModel:
 
     group_id: typing.Optional[IDType] = strawberry.field(description="group which is responsible for management of this facility", default=None)
     master_facility_id: typing.Optional[IDType] = strawberry.field(description="to which facility this facility belongs", default=None)
-    createdby_id: typing.Optional[IDType] = strawberry.field(description="who created", default=None)
     rbacobject_id: typing.Optional[IDType] = \
         strawberry.field(description="group_id or user_id defines access rights", default=None)
+    createdby_id: strawberry.Private[IDType] = None
 
 @strawberry.input(description="set of updateable attributes")
 class FacilityUpdateGQLModel:
@@ -270,17 +269,17 @@ class FacilityUpdateGQLModel:
     name: typing.Optional[str] = strawberry.field(description="name of the new facility", default=None)
     facilitytype_id: typing.Optional[IDType] = strawberry.field(description="facility type", default=None)
 
-    name_en: typing.Optional[str] = strawberry.field(description="english name of facility", default="")
-    label: typing.Optional[str] = strawberry.field(description="full name (including masterfacility)", default="")
-    address: typing.Optional[str] = strawberry.field(description="postal address", default="")
-    valid: typing.Optional[bool] = strawberry.field(description="if facility exists", default=True)
-    capacity: typing.Optional[int] = strawberry.field(description="facility capacity", default=0)
-    geometry: typing.Optional[str] = strawberry.field(description="SVG overlay for leaflet", default="")
-    geolocation: typing.Optional[str] = strawberry.field(description="WSGBLX;WGSBLY;ZOOM", default="")
+    name_en: typing.Optional[str] = strawberry.field(description="english name of facility", default=None)
+    label: typing.Optional[str] = strawberry.field(description="full name (including masterfacility)", default=None)
+    address: typing.Optional[str] = strawberry.field(description="postal address", default=None)
+    valid: typing.Optional[bool] = strawberry.field(description="if facility exists", default=None)
+    capacity: typing.Optional[int] = strawberry.field(description="facility capacity", default=None)
+    geometry: typing.Optional[str] = strawberry.field(description="SVG overlay for leaflet", default=None)
+    geolocation: typing.Optional[str] = strawberry.field(description="WSGBLX;WGSBLY;ZOOM", default=None)
 
     group_id: typing.Optional[IDType] = strawberry.field(description="group which is responsible for management of this facility", default=None)
     master_facility_id: typing.Optional[IDType] = strawberry.field(description="to which facility this facility belongs", default=None)
-    changed_id: strawberry.Private[IDType] = None
+    changedby_id: strawberry.Private[IDType] = None
 
 @strawberry.input(description="attributes needed for operation delete")
 class FacilityDeleteGQLModel:
