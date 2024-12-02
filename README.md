@@ -40,3 +40,26 @@ pytest --cov-report term-missing --cov=src --log-cli-level=INFO -x
 ```chatgpt
 convert next python code into mapped class (SQLAlchemy) with use of mapped_column and properly annotate it, do not include type in mapped_column and also do not use Optional typing in annotation, instead add parameter nullable=True
 ```
+
+```chatpgpt
+consider this as input
+@strawberry.field(description="""Updates an author""")
+async def publication_author_update(
+    self, info: strawberry.types.Info, author: PublicationAuthorUpdateGQLModel) -> "AuthorResultGQLModel":
+    return await encapsulateUpdate(info, PublicationAuthorGQLModel.getLoader(info), author, PublicationAuthorResultGQLModel(id=author.id, msg="ok"))
+
+next part is output
+
+@strawberry.field(description="""Updates an author""")
+async def publication_author_update(
+    self, info: strawberry.types.Info, author: PublicationAuthorUpdateGQLModel) -> typing.Union["AuthorGQLModel", UpdateError["AuthorGQLModel"]]:
+    return await Insert[AuthorGQLModel].DoItSafeWay(info=info, entity=author)
+
+change by same way this pay some attention to replace Insert (insert), Update (update), Delete (delete), if you include Insert in funcion body, the result must contain InsertError, similary for other cases
+
+@strawberry.field(description="""Adds the authorship to the publication, Currently it does not check if the authorship exists.""")
+async def publication_author_insert(
+    self, info: strawberry.types.Info, author: PublicationAuthorInsertGQLModel) -> "AuthorResultGQLModel":
+    return await encapsulateInsert(info, PublicationAuthorGQLModel.getLoader(info), author, PublicationAuthorResultGQLModel(id=author.id, msg="ok"))
+
+```
