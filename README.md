@@ -52,7 +52,7 @@ next part is output
 
 @strawberry.field(description="""Updates an author""")
 async def publication_author_update(
-    self, info: strawberry.types.Info, author: PublicationAuthorUpdateGQLModel) -> typing.Union["AuthorGQLModel", UpdateError["AuthorGQLModel"]]:
+    self, info: strawberry.types.Info, author: PublicationAuthorUpdateGQLModel) -> typing.Union["AuthorGQLModel", InsertError["AuthorGQLModel"]]:
     return await Insert[AuthorGQLModel].DoItSafeWay(info=info, entity=author)
 
 change by same way this pay some attention to replace Insert (insert), Update (update), Delete (delete), if you include Insert in funcion body, the result must contain InsertError, similary for other cases
@@ -62,4 +62,40 @@ async def publication_author_insert(
     self, info: strawberry.types.Info, author: PublicationAuthorInsertGQLModel) -> "AuthorResultGQLModel":
     return await encapsulateInsert(info, PublicationAuthorGQLModel.getLoader(info), author, PublicationAuthorResultGQLModel(id=author.id, msg="ok"))
 
+```
+
+```chatgpt
+I want to generate CUD mutations / decorated function for a particular type named
+ModelGQLName
+
+in such case I want the reaponse from you which will be
+@strawberry.field(
+    description="""Inserts a medal""",
+    permission_classes=[
+        OnlyForAuthentized
+    ])
+async def medal_update(
+    self, info: strawberry.types.Info, medal: MedalInsertGQLModel) -> typing.Union["MedalGQLModel", InsertError["MedalGQLModel"]]:
+    return await Insert[MedalGQLModel].DoItSafeWay(info=info, entity=author)
+
+@strawberry.field(
+    description="""Updates the medal""",
+    permission_classes=[
+        OnlyForAuthentized
+    ])
+async def medal_update(
+    self, info: strawberry.types.Info, medal: MedalUpdateGQLModel) -> typing.Union["MedalGQLModel", UpdateError["MedalGQLModel"]]:
+    return await Update[MedalGQLModel].DoItSafeWay(info=info, entity=author)
+
+@strawberry.field(
+    description="""Delete the medal""",
+    permission_classes=[
+        OnlyForAuthentized
+    ]
+    )
+async def medal_delete(
+    self, info: strawberry.types.Info, medal: MedalUpdateGQLModel) -> typing.Optional[UpdateError["MedalGQLModel"]]:
+    return await Update[MedalGQLModel].DoItSafeWay(info=info, entity=author)
+
+do it now for RankGQLModel
 ```
