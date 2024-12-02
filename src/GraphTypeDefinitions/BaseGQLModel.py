@@ -4,7 +4,6 @@ import typing
 import strawberry
 import dataclasses
 
-from uoishelpers.resolvers import createInputs
 from uoishelpers.gqlpermissions import OnlyForAuthentized, RBACObjectGQLModel
 
 IDType = uuid.UUID
@@ -17,7 +16,7 @@ async def resolve_reference(cls, info: strawberry.types.Info, id: IDType, **othe
 
 
 @strawberry.federation.interface(
-    keys=["id"], description="""Entity representing a Facility"""
+    keys=["id"], description="""Entity representing an interface"""
 )
 class BaseGQLModel:
     

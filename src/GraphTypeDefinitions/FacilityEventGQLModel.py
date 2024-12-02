@@ -31,32 +31,32 @@ class FacilityEventGQLModel(BaseGQLModel):
     state_id: typing.Optional[IDType] = strawberry.field(description="")
 
     @strawberry.field(
-            description="""the event""",
-            permission_classes=[
-                OnlyForAuthentized
-            ]
-            )
+        description="""the event""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
     async def event(self, info: strawberry.types.Info) -> typing.Optional["EventGQLModel"]:
         from .EventGQLModel import EventGQLModel
         return await EventGQLModel.resolve_reference(info=info, id=self.event_id)
 
     @strawberry.field(
-            description="""the facility""",
-            permission_classes=[
-                OnlyForAuthentized
-            ]
-            )
+        description="""the facility""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
     async def facility(self, info: strawberry.types.Info) -> typing.Optional["FacilityGQLModel"]:
         from .FacilityGQLModel import FacilityGQLModel
         result = await FacilityGQLModel.resolve_reference(info=info, id=self.facility_id)
         return result
 
     @strawberry.field(
-            description="""the facility state (reserved for an event, lesson planned etc.)""",
-            permission_classes=[
-                OnlyForAuthentized
-            ]
-            )
+        description="""the facility state (reserved for an event, lesson planned etc.)""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
     async def state(self, info: strawberry.types.Info) -> typing.Optional["FacilityEventStateTypeGQLModel"]:
         from .FacilityEventStateTypeGQLModel import FacilityEventStateTypeGQLModel
         result = await FacilityEventStateTypeGQLModel.resolve_reference(info=info, id=self.state_id)
@@ -88,10 +88,10 @@ class FacilityReservationDeleteGQLModel:
     lastchange: datetime.datetime = strawberry.field(description="timestamp")
 
 @strawberry.mutation(
-        description="Create a facility reservation for a particular event if such reservation exist, UpdateError is returned",
-        permission_classes=[
-            OnlyForAuthentized
-        ]
+    description="Create a facility reservation for a particular event if such reservation exist, UpdateError is returned",
+    permission_classes=[
+        OnlyForAuthentized
+    ]
 )
 async def facility_reservation_create(self, info: strawberry.types.Info, facility_reservation: FacilityReservationInsertGQLModel) -> typing.Union["FacilityEventGQLModel", InsertError["FacilityEventGQLModel"], UpdateError["FacilityEventGQLModel"]]:
     from .FacilityEventGQLModel import FacilityEventGQLModel
@@ -105,10 +105,10 @@ async def facility_reservation_create(self, info: strawberry.types.Info, facilit
     return await Insert[FacilityEventGQLModel].DoItSafeWay(info=info, entity=facility_reservation)
 
 @strawberry.mutation(
-        description="",
-        permission_classes=[
-            OnlyForAuthentized
-        ]
+    description="",
+    permission_classes=[
+        OnlyForAuthentized
+    ]
 )
 async def facility_reservation_update(self, info: strawberry.types.Info, facility_reservation: FacilityReservationUpdateGQLModel) -> typing.Union["FacilityEventGQLModel", UpdateError["FacilityEventGQLModel"]]:
     from .FacilityEventGQLModel import FacilityEventGQLModel
@@ -116,10 +116,10 @@ async def facility_reservation_update(self, info: strawberry.types.Info, facilit
 
 
 @strawberry.mutation(
-        description="",
-        permission_classes=[
-            OnlyForAuthentized
-        ]
+    description="",
+    permission_classes=[
+        OnlyForAuthentized
+    ]
 )
 async def facility_reservation_delete(self, info: strawberry.types.Info, facility_reservation: FacilityReservationDeleteGQLModel) -> typing.Optional[DeleteError["FacilityEventGQLModel"]]:
     from .FacilityEventGQLModel import FacilityEventGQLModel

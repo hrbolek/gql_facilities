@@ -321,5 +321,17 @@ async def facility_delete(self, info: strawberry.types.Info, facility: FacilityD
     return await Delete[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
 
 
+class RBACUpdatePermission(SimpleUpdatePermission):
+    async def has_permission(
+        self, source: typing.Any, info: strawberry.types.Info, **kwargs: typing.Any
+    ) -> typing.Union[bool, typing.Awaitable[bool]]:
+        cls = type(self)
+        loader = cls.getLoader(info=info)
+        first_item = next(iter(kwargs.values()), None)
+        assert first_item is not None, f"item to update is unknown {kwargs}"
+        dbrow = await loader.load(first_item.id)
+        rbacobject_id = getattr(dbrow, "rbacobject_id", None)
+        pass        
+
 # endregion
  

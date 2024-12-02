@@ -38,5 +38,5 @@ pytest --cov-report term-missing --cov=src --log-cli-level=INFO -x
 ## Some prompts for chatgpt
 
 ```chatgpt
-convert next python code into mapped class (SQLAlchemy) with use of mapped_column and properly annotate it
+convert next python code into mapped class (SQLAlchemy) with use of mapped_column and properly annotate it, do not include type in mapped_column and also do not use Optional typing in annotation, instead add parameter nullable=True
 ```
