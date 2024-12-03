@@ -19,7 +19,11 @@ from uoishelpers.resolvers import (
     UpdateError, 
     Update, 
     DeleteError, 
-    Delete
+    Delete,
+
+    PageResolver,
+    VectorResolver,
+    ScalarResolver
 )
 
 from .BaseGQLModel import BaseGQLModel, IDType
@@ -147,16 +151,37 @@ class FacilityGQLModel(BaseGQLModel):
             ]
     )
 
-    @strawberry.field(
+    type: typing.Optional["FacilityTypeGQLModel"] = strawberry.field(
         description="""Facility type""",
         permission_classes=[
             OnlyForAuthentized
-            ]
-        )
-    async def type(self, info: strawberry.types.Info) -> typing.Optional["FacilityTypeGQLModel"]:
-        from .FacilityTypeGQLModel import FacilityTypeGQLModel
-        result = await FacilityTypeGQLModel.resolve_reference(info=info, id=self.facilitytype_id)
-        return result
+            ],
+        resolver=ScalarResolver["FacilityTypeGQLModel"](fkey_field_name="facilitytype_id")
+    )
+
+    master_facility: typing.Optional["FacilityGQLModel"] = strawberry.field(
+        description="""Facility above this""",
+        permission_classes=[
+            OnlyForAuthentized
+        ],
+        resolver=ScalarResolver["FacilityGQLModel"](fkey_field_name="master_facility_id")
+    )
+
+    sub_facilities: typing.List["FacilityGQLModel"] = strawberry.field(
+        description="""Facilities inside facility (like buildings in an areal)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ],
+        resolver=VectorResolver["FacilityGQLModel"](fkey_field_name="master_facility_id", whereType=)
+    )
+
+    group: typing.Optional["GroupGQLModel"] =strawberry.field(
+        description="""Facility management group""",
+        permission_classes=[
+            OnlyForAuthentized
+            ],
+        resolver=ScalarResolver["GroupGQLModel"](fkey_field_name="group_id")
+    )
 
     @strawberry.field(
             description="""Intermediate entity linking the event and facility""",
@@ -173,42 +198,6 @@ class FacilityGQLModel(BaseGQLModel):
         # results = await asyncio.gather(*futures)
         return results
 
-    @strawberry.field(
-            description="""Facility above this""",
-            permission_classes=[OnlyForAuthentized]
-            )
-    async def master_facility(self, info: strawberry.types.Info) -> typing.Optional["FacilityGQLModel"]:
-        # master_facility_id = resolve_field(self=self, field_name="master_facility_id")
-        master_facility_id = self.master_facility_id
-        result = await FacilityGQLModel.resolve_reference(info=info, id=master_facility_id)
-        return result
-
-    @strawberry.field(
-            description="""Facilities inside facility (like buildings in an areal)""",
-            permission_classes=[OnlyForAuthentized]
-            )
-    async def sub_facilities(
-        self, info: strawberry.types.Info
-    ) -> typing.List["FacilityGQLModel"]:
-        loader = FacilityGQLModel.getLoader(info)
-        # id = resolve_field(self=self, field_name="id")
-        id = self.id
-        rows = await loader.filter_by(master_facility_id = id)
-        # return result
-        futures = (FacilityGQLModel.resolve_reference(info=info, id=row.id) for row in rows)
-        result = await asyncio.gather(*futures)
-        return result
-
-    @strawberry.field(
-            description="""Facility management group""",
-            permission_classes=[OnlyForAuthentized]
-            )
-    async def group(self, info: strawberry.types.Info) -> typing.Optional["GroupGQLModel"]:
-        from .GroupGQLModel import GroupGQLModel
-        # group_id = resolve_field(self=self, field_name="group_id")
-        group_id = self.group_id
-        return await GroupGQLModel.resolve_reference(info, id=group_id)
-    
 
 @strawberry.field(
         description="""Finds an facility their id""",
@@ -318,6 +307,7 @@ async def facility_insert(self, info: strawberry.types.Info, facility: FacilityI
     )
 async def facility_delete(self, info: strawberry.types.Info, facility: FacilityDeleteGQLModel) -> typing.Optional[DeleteError[FacilityGQLModel]]:
     return await Delete[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
+
 
 
 # class RBACUpdatePermission(SimpleUpdatePermission):

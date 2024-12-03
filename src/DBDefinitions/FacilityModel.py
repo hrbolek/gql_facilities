@@ -1,11 +1,6 @@
 import datetime
 import uuid
 from sqlalchemy import (
-    Column,
-    String,
-    Boolean,
-    DateTime,
-    Integer,
     ForeignKey,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
