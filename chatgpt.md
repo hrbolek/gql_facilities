@@ -28,7 +28,7 @@ To fulfill this request, all table columns must be annotated like
 name: Mapped[str] = mapped_column(comment="enity name", defaul=None, nullable=True)
 
 There must be defined BaseModel which is inherited by other models.
-Definition of this model must be
+Definition of this model must be, it is also and example which defines a response when rewritting is wanted
 
 ```python
 import uuid
@@ -78,7 +78,7 @@ Important goal is to make entities created by sqlalchemy compatible with datacla
 To expose table models to graphql endpoint strawberry library is used.
 
 There is BaseGQLModel which is inherited by other graphql models
-Its definition must be this
+Its definition must be this, it is also and example which defines a response when rewritting is wanted
 
 ```python
 import uuid
