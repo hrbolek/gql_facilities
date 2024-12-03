@@ -99,3 +99,17 @@ async def medal_delete(
 
 do it now for RankGQLModel
 ```
+
+```chatpgpt
+convert next python code into mapped class (SQLAlchemy) with use of mapped_column and properly annotate it, do not include type in mapped_column and also do not use Optional typing in annotation, instead add parameter nullable=True
+class StateTransitionModel(BaseModel):
+    __tablename__ = "statetransitions"
+
+    id = UUIDColumn()
+    name = Column(String, comment="name of state transition")
+    name_en = Column(String, comment="english name of state transition")
+
+    source_id = Column(ForeignKey("states.id"), index=True, nullable=False)
+    target_id = Column(ForeignKey("states.id"), index=True, nullable=False)
+    statemachine_id = Column(ForeignKey("statemachines.id"), index=True, nullable=False)
+```
