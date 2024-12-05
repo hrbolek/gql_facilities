@@ -24,7 +24,7 @@ class FacilityModel(BaseModel):
     geometry: Mapped[str] = mapped_column(nullable=True, default=None, comment="SVG overlay for leaflet") # Column(String, comment="SVG overlay for leaflet")
     geolocation: Mapped[str] = mapped_column(nullable=True, default=None, comment="WGSX;WGSY;Zoom") # Column(String, comment="WGSX;WGSY;Zoom")
 
-    group_id: Mapped[uuid.UUID] = mapped_column(index=True, nullable=True, default=None, comment="who is responsible for this facility") # UUIDFKey(nullable=True, comment="who is responsible for this facility")#Column(ForeignKey("groups.id"), index=True)
+    group_id: Mapped[uuid.UUID] = UUIDFKey(ForeignKey("group.id"), index=True, nullable=True, default=None, comment="who is responsible for this facility") # UUIDFKey(nullable=True, comment="who is responsible for this facility")#Column(ForeignKey("groups.id"), index=True)
     facilitytype_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("facilitytypes.id"), index=True, nullable=True, default=None) # Column(ForeignKey("facilitytypes.id"), index=True)
     master_facility_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("facilities.id"), index=True, nullable=True, default=None) # Column(ForeignKey("facilities.id"), index=True, nullable=True)
 
