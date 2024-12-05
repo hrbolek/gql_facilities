@@ -172,7 +172,7 @@ class FacilityGQLModel(BaseGQLModel):
         permission_classes=[
             OnlyForAuthentized
             ],
-        resolver=VectorResolver["FacilityGQLModel"](fkey_field_name="master_facility_id", whereType=)
+        resolver=VectorResolver["FacilityGQLModel"](fkey_field_name="master_facility_id", whereType=None)
     )
 
     group: typing.Optional["GroupGQLModel"] =strawberry.field(
@@ -199,16 +199,6 @@ class FacilityGQLModel(BaseGQLModel):
         return results
 
 
-@strawberry.field(
-        description="""Finds an facility their id""",
-        permission_classes=[OnlyForAuthentized]
-        )
-async def facility_by_id(
-    self, info: strawberry.types.Info, id: IDType
-) -> typing.Union[FacilityGQLModel, None]:
-    result = await FacilityGQLModel.resolve_reference(info=info, id=id)
-    return result
-
 @createInputs
 @dataclasses.dataclass
 class FacilityInputFilter:
@@ -221,7 +211,12 @@ class FacilityInputFilter:
     master_facility_id: IDType
     facilitytype_id: IDType
 
-from uoishelpers.resolvers import PageResolver
+facility_by_id = strawberry.field(
+        description="""Finds an facility their id""",
+        permission_classes=[OnlyForAuthentized],
+        graphql_type=typing.Optional[FacilityGQLModel],
+        resolver=FacilityGQLModel.load_with_loader
+        )
     
 facility_page = strawberry.field(
         description="""Finds paged facilities""",
@@ -293,8 +288,6 @@ async def facility_update(self, info: strawberry.types.Info, facility: typing.An
         ]
     )
 async def facility_insert(self, info: strawberry.types.Info, facility: FacilityInsertGQLModel) -> typing.Union[FacilityGQLModel, InsertError[FacilityGQLModel]]:
-    # facility.rbacobject_id can be defined from frontend, if not, facility.group_id is used
-    # if facility.rbacobject_id == facility.group_id, roles can be checked / derived from assigned group
     facility.rbacobject_id = facility.rbacobject_id if facility.rbacobject_id else facility.group_id
     return await Insert[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
 

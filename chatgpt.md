@@ -1,3 +1,5 @@
+## General introduction
+
 Project uois is a project based on docker-compose setup.
 This contains postgres sql databases as persisten storage for data.
 Access to database is controlled by several containers (their names starts with gql_).
@@ -415,3 +417,423 @@ class FacilityGQLModel(BaseGQLModel):
     )
 ```
 
+## Example of Final Form for Table Model (sqlalchemy)
+reformulate given model into this form
+```python
+import datetime
+import uuid
+from sqlalchemy import (
+    ForeignKey,
+)
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.ext.hybrid import hybrid_property
+
+from .BaseModel import BaseModel, UUIDFKey, UUIDColumn
+class FacilityModel(BaseModel):
+    """Spravuje data spojena s objektem daneho typu"""
+
+    __tablename__ = "facilities"
+    # id = UUIDColumn()
+
+    name: Mapped[str] = mapped_column(nullable=True, default=None) # Column(String)
+    name_en: Mapped[str] = mapped_column(nullable=True, default=None) # Column(String)
+    label: Mapped[str] = mapped_column(nullable=True, default=None, comment="Facility label = name including master facilities like S/1/9") # Column(String, comment="Facility label = name including master facilities like S/1/9")
+    address: Mapped[str] = mapped_column(nullable=True, default=None, comment="Real address") # Column(String, comment="Real address")
+    valid: Mapped[bool] = mapped_column(nullable=True, default=None, comment="If facility is still available") # Column(Boolean, default=True, comment="If facility is still available")
+    startdate: Mapped[datetime.datetime] = mapped_column(nullable=True, default=None, comment="First date of availability") # Column(DateTime, comment="First date of availability")
+    enddate: Mapped[datetime.datetime] = mapped_column(nullable=True, default=None, comment="Last date of availability") # Column(DateTime, comment="Last date of availability")
+    capacity: Mapped[int] = mapped_column(nullable=True, default=None, comment="How many students") # Column(Integer, comment="How many students")
+    geometry: Mapped[str] = mapped_column(nullable=True, default=None, comment="SVG overlay for leaflet") # Column(String, comment="SVG overlay for leaflet")
+    geolocation: Mapped[str] = mapped_column(nullable=True, default=None, comment="WGSX;WGSY;Zoom") # Column(String, comment="WGSX;WGSY;Zoom")
+
+    group_id: Mapped[uuid.UUID] = mapped_column(index=True, nullable=True, default=None, comment="who is responsible for this facility") # UUIDFKey(nullable=True, comment="who is responsible for this facility")#Column(ForeignKey("groups.id"), index=True)
+    facilitytype_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("facilitytypes.id"), index=True, nullable=True, default=None) # Column(ForeignKey("facilitytypes.id"), index=True)
+    master_facility_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("facilities.id"), index=True, nullable=True, default=None) # Column(ForeignKey("facilities.id"), index=True, nullable=True)
+
+    @hybrid_property
+    def type_id(self):
+        return self.facilitytype_id
+
+    masterfacility = relationship("FacilityModel", viewonly=True) # https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+    subfacilities = relationship ("FacilityModel", remote_side="FacilityModel.id", viewonly=True, uselist=True) # https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+    # # https://docs.sqlalchemy.org/en/20/_modules/examples/materialized_paths/materialized_paths.html
+    type = relationship("FacilityTypeModel", viewonly=True)#, lazy="joined") # https://docs.sqlalchemy.org/en/20/orm/self_referential.html
+
+```
+
+## Example of Final Form of GraphQL model
+
+each table model has own graphql attribute, including foreignkeys
+
+each foreign key has second attribute returning an entity
+
+```python
+import dataclasses
+import datetime
+import typing
+import strawberry
+
+from uoishelpers.gqlpermissions import (
+    OnlyForAuthentized,
+    SimpleInsertPermission, 
+    SimpleUpdatePermission, 
+    SimpleDeletePermission
+)    
+from uoishelpers.resolvers import (
+    getLoadersFromInfo, 
+    createInputs,
+
+    InsertError, 
+    Insert, 
+    UpdateError, 
+    Update, 
+    DeleteError, 
+    Delete,
+
+    PageResolver,
+    VectorResolver,
+    ScalarResolver
+)
+
+from .BaseGQLModel import BaseGQLModel, IDType
+
+GroupGQLModel = typing.Annotated["GroupGQLModel", strawberry.lazy(".GroupGQLModel")]
+EventGQLModel = typing.Annotated["EventGQLModel", strawberry.lazy(".EventGQLModel")]
+FacilityTypeGQLModel = typing.Annotated["FacilityTypeGQLModel", strawberry.lazy(".FacilityTypeGQLModel")]
+FacilityEventStateTypeGQLModel = typing.Annotated["FacilityEventStateTypeGQLModel", strawberry.lazy(".FacilityEventStateTypeGQLModel")]
+FacilityEventGQLModel = typing.Annotated["FacilityEventGQLModel", strawberry.lazy(".FacilityEventGQLModel")]
+
+
+@strawberry.federation.type(
+    keys=["id"], description="""Entity representing a Facility"""
+)
+class FacilityGQLModel(BaseGQLModel):
+    @classmethod
+    def getLoader(cls, info: strawberry.types.Info):
+        return getLoadersFromInfo(info).FacilityModel
+ 
+    name: typing.Optional[str] = strawberry.field(
+        default=None,
+        description="""Facility name assigned by an administrator""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
+    
+    name_en: typing.Optional[str] = strawberry.field(
+        default=None,
+        description="""Facility eng name assigned by an administrator""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
+        
+    label: typing.Optional[str] = strawberry.field(
+        default=None,
+        description="""Facility full name assigned by an administrator""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
+
+    startdate: typing.Optional[datetime.datetime] = strawberry.field(
+        default=None,
+        description="""Facility datetime """,
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
+
+    enddate: typing.Optional[datetime.datetime] = strawberry.field(
+        default=None,
+        description="""Facility datetime """,
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+        )
+
+    # address
+    address: typing.Optional[str] = strawberry.field(
+        default=None,
+        description="""Facility address""",
+        permission_classes=[
+            OnlyForAuthentized
+        ]
+    )
+    # valid
+    valid: typing.Optional[bool] = strawberry.field(
+        default=None,
+        description="""is the facility still valid""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    capacity: typing.Optional[int] = strawberry.field(
+        default=None,
+        description="""Facility's capacity""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    # manager_id
+
+    # address
+    geometry: typing.Optional[str] = strawberry.field(
+        default=None,
+        description="""Facility geometry (SVG)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    geolocation: typing.Optional[str] = strawberry.field(
+        default=None,
+        description="""Facility geo address (WGS84+zoom)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    group_id: typing.Optional[IDType] = strawberry.field(
+        default=None,
+        description="""Facility geo address (WGS84+zoom)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    facilitytype_id: typing.Optional[IDType] = strawberry.field(
+        default=None,
+        description="""Facility geo address (WGS84+zoom)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    master_facility_id: typing.Optional[IDType] = strawberry.field(
+        default=None,
+        description="""Facility geo address (WGS84+zoom)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ]
+    )
+
+    type: typing.Optional["FacilityTypeGQLModel"] = strawberry.field(
+        description="""Facility type""",
+        permission_classes=[
+            OnlyForAuthentized
+            ],
+        resolver=ScalarResolver["FacilityTypeGQLModel"](fkey_field_name="facilitytype_id")
+    )
+
+    master_facility: typing.Optional["FacilityGQLModel"] = strawberry.field(
+        description="""Facility above this""",
+        permission_classes=[
+            OnlyForAuthentized
+        ],
+        resolver=ScalarResolver["FacilityGQLModel"](fkey_field_name="master_facility_id")
+    )
+
+    sub_facilities: typing.List["FacilityGQLModel"] = strawberry.field(
+        description="""Facilities inside facility (like buildings in an areal)""",
+        permission_classes=[
+            OnlyForAuthentized
+            ],
+        resolver=VectorResolver["FacilityGQLModel"](fkey_field_name="master_facility_id", whereType=)
+    )
+
+    group: typing.Optional["GroupGQLModel"] =strawberry.field(
+        description="""Facility management group""",
+        permission_classes=[
+            OnlyForAuthentized
+            ],
+        resolver=ScalarResolver["GroupGQLModel"](fkey_field_name="group_id")
+    )
+```
+
+## Example of Fields for Query graphQL model
+
+Fields in InputFilter class are same as columns defined in table model
+
+```python
+@createInputs
+@dataclasses.dataclass
+class FacilityInputFilter:
+    name: str
+    name_en: str
+    valid: bool
+    label: str
+    capacity: int
+    group_id: IDType
+    master_facility_id: IDType
+    facilitytype_id: IDType
+
+facility_by_id = strawberry.field(
+    description="""Finds an facility their id""",
+    permission_classes=[OnlyForAuthentized],
+    graphql_type=typing.Optional[FacilityGQLModel],
+    resolver=FacilityGQLModel.load_with_loader
+    )
+    
+facility_page = strawberry.field(
+    description="""Finds paged facilities""",
+    permission_classes=[OnlyForAuthentized],
+    resolver=PageResolver[FacilityGQLModel](whereType=FacilityInputFilter)
+    )    
+```
+
+## Example of Fields for Mutation graphQL model
+
+InsertGQLModel has fields related to table model columns.
+Each field has defined appropriate default value.
+If name model exists it must be annotated as mandatory.
+
+UpdateGQLModel has fields also related to table model columns.
+Fields id and lastchange are mandatory, other are not and they have default value None
+
+DeletGQLModel has only two fields id and lastchange both mandatory.
+
+```python
+@strawberry.input(description="initial attributes for facility insert")
+class FacilityInsertGQLModel:
+    name: str = strawberry.field(description="name of the new facility")
+    facilitytype_id: typing.Optional[IDType] = strawberry.field(description="facility type", default=None)
+    id: typing.Optional[IDType] = strawberry.field(description="primary key (UUID), could be client generated", default=None)
+
+    name_en: typing.Optional[str] = strawberry.field(description="english name of facility", default="")
+    label: typing.Optional[str] = strawberry.field(description="full name (including masterfacility)", default="")
+    address: typing.Optional[str] = strawberry.field(description="postal address", default="")
+    valid: typing.Optional[bool] = strawberry.field(description="if facility exists", default=True)
+    capacity: typing.Optional[int] = strawberry.field(description="facility capacity", default=0)
+    geometry: typing.Optional[str] = strawberry.field(description="SVG overlay for leaflet", default="")
+    geolocation: typing.Optional[str] = strawberry.field(description="WSGBLX;WGSBLY;ZOOM", default="")
+
+    group_id: typing.Optional[IDType] = strawberry.field(description="group which is responsible for management of this facility", default=None)
+    master_facility_id: typing.Optional[IDType] = strawberry.field(description="to which facility this facility belongs", default=None)
+    rbacobject_id: typing.Optional[IDType] = \
+        strawberry.field(description="group_id or user_id defines access rights", default=None)
+    createdby_id: strawberry.Private[IDType] = None
+
+@strawberry.input(description="set of updateable attributes")
+class FacilityUpdateGQLModel:
+    lastchange: datetime.datetime = strawberry.field(description="timestamp")
+    id: IDType = strawberry.field(description="primary key")
+
+    name: typing.Optional[str] = strawberry.field(description="name of the new facility", default=None)
+    facilitytype_id: typing.Optional[IDType] = strawberry.field(description="facility type", default=None)
+
+    name_en: typing.Optional[str] = strawberry.field(description="english name of facility", default=None)
+    label: typing.Optional[str] = strawberry.field(description="full name (including masterfacility)", default=None)
+    address: typing.Optional[str] = strawberry.field(description="postal address", default=None)
+    valid: typing.Optional[bool] = strawberry.field(description="if facility exists", default=None)
+    capacity: typing.Optional[int] = strawberry.field(description="facility capacity", default=None)
+    geometry: typing.Optional[str] = strawberry.field(description="SVG overlay for leaflet", default=None)
+    geolocation: typing.Optional[str] = strawberry.field(description="WSGBLX;WGSBLY;ZOOM", default=None)
+
+    group_id: typing.Optional[IDType] = strawberry.field(description="group which is responsible for management of this facility", default=None)
+    master_facility_id: typing.Optional[IDType] = strawberry.field(description="to which facility this facility belongs", default=None)
+    changedby_id: strawberry.Private[IDType] = None
+
+@strawberry.input(description="attributes needed for operation delete")
+class FacilityDeleteGQLModel:
+    lastchange: datetime.datetime = strawberry.field(description="timestamp")
+    id: IDType = strawberry.field(description="primary key")
+
+@strawberry.mutation(
+        description="Updates the facility",
+        permission_classes=[
+            OnlyForAuthentized,
+            SimpleUpdatePermission[FacilityGQLModel](roles=["administrátor", "administrátor budov"])
+        ]
+    )
+async def facility_update(self, info: strawberry.types.Info, facility: typing.Annotated[FacilityUpdateGQLModel, strawberry.argument(description="desc")]) -> typing.Union[FacilityGQLModel, UpdateError[FacilityGQLModel]]:
+    return await Update[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
+
+@strawberry.mutation(
+        description="Creates a facility, available only for admins",
+        permission_classes=[
+            OnlyForAuthentized,
+            SimpleInsertPermission[FacilityGQLModel](roles=["administrátor", "administrátor budov"])
+        ]
+    )
+async def facility_insert(self, info: strawberry.types.Info, facility: FacilityInsertGQLModel) -> typing.Union[FacilityGQLModel, InsertError[FacilityGQLModel]]:
+    facility.rbacobject_id = facility.rbacobject_id if facility.rbacobject_id else facility.group_id
+    return await Insert[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
+
+@strawberry.mutation(
+        description="Delete the facility, available only for admins",
+        permission_classes=[
+            OnlyForAuthentized,
+            SimpleDeletePermission[FacilityGQLModel](roles=["administrátor", "administrátor budov"])
+        ]
+    )
+async def facility_delete(self, info: strawberry.types.Info, facility: FacilityDeleteGQLModel) -> typing.Optional[DeleteError[FacilityGQLModel]]:
+    return await Delete[FacilityGQLModel].DoItSafeWay(info=info, entity=facility)
+
+```
+
+### Writing a GQL queries
+
+for query based on _paged query, there are parameters
+where, skip, limit, order
+where is optional with type of appropriate InputFilter
+skip is optional with type int, default value is 0
+limit is optional with type int, default value is 10,
+order is optinal with type String, default value is None
+
+### Writing a tests
+
+the example of test (content of test_dbdefinitions.py file) is
+```python
+import pytest
+from .shared import prepare_demodata, prepare_in_memory_sqllite
+
+@pytest.mark.asyncio
+async def test_table_users_feed():
+    async_session_maker = await prepare_in_memory_sqllite()
+    await prepare_demodata(async_session_maker)
+
+    # data = get_demodata()
+
+def test_connection_string():
+    from src.DBDefinitions import ComposeConnectionString
+    connectionString = ComposeConnectionString()
+
+    assert "://" in connectionString
+    assert "@" in connectionString
+
+
+def test_connection_uuidcolumn():
+    from src.DBDefinitions import UUIDColumn
+    col = UUIDColumn(name="name")
+
+    assert col is not None
+
+
+@pytest.mark.asyncio
+async def test_table_start_engine():
+    from src.DBDefinitions import startEngine
+    connectionString = "sqlite+aiosqlite:///:memory:"
+    async_session_maker = await startEngine(
+        connectionString, makeDrop=True, makeUp=True
+    )
+
+    assert async_session_maker is not None
+
+```
+
+the example of test (content of test_queries.py file) is
+```python
+test_facility_by_id = createByIdTest2(tableName="facilities")
+test_facility_update = createUpdateTest2(tableName="facilities", variables={"name": "newname"})
+test_facility_create = createTest2(tableName="facilities", queryName="create", variables={"name": "newname"})
+test_facility_delete = createDeleteTest2(tableName="facilities", variables={"id": "18375c23-767c-4c1e-adb6-9b2beb463533", "name": "newname"})
+
+test_facility_type_by_id = createByIdTest2(tableName="facilitytypes")
+test_facility_type_create = createTest2(tableName="facilitytypes", queryName="create", variables={"name": "newname"})
+test_facility_type_update = createUpdateTest2(tableName="facilitytypes", variables={"name": "newname"})
+test_facility_type_delete = createDeleteTest2(tableName="facilitytypes", variables={"name": "newname"})
+
+```

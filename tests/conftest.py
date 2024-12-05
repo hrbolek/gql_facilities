@@ -151,7 +151,7 @@ async def Context():
     from src.DBFeeder import initDB
     await initDB(asyncSessionMaker=async_session_maker, filename="./systemdata.json")
     # context
-    from Dataloaders import createLoadersContext
+    from src.Dataloaders import createLoadersContext
     loadersContext = createLoadersContext(asyncSessionMaker=async_session_maker)
     # ...
 
